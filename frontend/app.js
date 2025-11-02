@@ -8,7 +8,9 @@
 const API_BASE_URL = (() => {
     // Check if API_BASE_URL is set via window (from Vercel env var or manual config)
     if (window.API_BASE_URL && window.API_BASE_URL !== '%API_BASE_URL%') {
-        return window.API_BASE_URL;
+        const url = window.API_BASE_URL.replace(/\/$/, ''); // Remove trailing slash
+        console.log('Using API_BASE_URL from window:', url);
+        return url;
     }
     
     // Try to detect API URL from current location
@@ -16,12 +18,17 @@ const API_BASE_URL = (() => {
     
     // If running locally, use mock API server on port 8080
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        console.log('Using local API:', 'http://localhost:8080/api');
         return 'http://localhost:8080/api';
     }
     
     // For production, use the Lambda Function URL
-    return 'https://i5of4xggwlglu3f477pzq24o7u0jrwms.lambda-url.us-west-2.on.aws';
+    const lambdaUrl = 'https://i5of4xggwlglu3f477pzq24o7u0jrwms.lambda-url.us-west-2.on.aws';
+    console.log('Using Lambda Function URL:', lambdaUrl);
+    return lambdaUrl;
 })();
+
+console.log('API_BASE_URL initialized to:', API_BASE_URL);
 
 let currentRuns = [];
 let selectedRun = null;
@@ -109,10 +116,21 @@ async function loadRuns() {
     hideRunsContainer();
 
     try {
+        console.log('Fetching runs from:', `${API_BASE_URL}/runs?limit=100`);
         const response = await fetch(`${API_BASE_URL}/runs?limit=100`);
-        const data = await response.json();
-
+        
+        console.log('Response status:', response.status, response.statusText);
+        
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to load runs'}`);
+        }
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+
+        if (!data.success) {
             throw new Error(data.message || 'Failed to load runs');
         }
 
@@ -122,8 +140,10 @@ async function loadRuns() {
         showRunsContainer();
     } catch (error) {
         console.error('Error loading runs:', error);
-        showError(error.message || 'Failed to load runs');
+        showError(error.message || 'Failed to load runs. Check console for details.');
         hideLoading();
+        // Still show the container even if there's an error
+        showRunsContainer();
     }
 }
 
