@@ -3,9 +3,7 @@
  * HTTP API endpoint for running workflows
  */
 
-import { setDefaultOpenAIKey } from '@openai/agents';
-import { getOpenAIKeyFromAWS } from '../src/services/aws.js';
-import { runWorkflow } from '../src/agent/workflow.js';
+import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { listAllRuns, getRun, createRun, updateRunStatus } from '../src/services/database.js';
 import { listTemplates, getTemplate } from '../src/services/database.js';
 import { listBrandGuides, getBrandGuide } from '../src/services/database.js';
@@ -243,7 +241,7 @@ export async function handler(event, context) {
           };
         }
 
-        // Create run record
+        // Create run record first
         const run = await createRun({
           templateId: funnelTemplate.funnelTemplateId,
           templateVersion: 'latest',
@@ -254,58 +252,97 @@ export async function handler(event, context) {
           }
         });
 
-        // Get API key from AWS
-        logger.info('Fetching OpenAI API key from AWS');
-        const apiKey = await getOpenAIKeyFromAWS();
-        setDefaultOpenAIKey(apiKey);
-
-        // Prepare workflow input
-        const workflowInput = {
-          input_as_text: body.customInstructions || 'Please rewrite the funnel JSON according to the brand style guide and avatar provided.',
-          brandGuide: brandGuide.content,
-          templateFunnel: funnelTemplate.funnelJson
-        };
-
-        // Start workflow execution (async - don't wait for completion)
-        logger.info('Starting workflow execution', { runId: run.runId });
+        // Get Step Functions state machine ARN from environment
+        const stateMachineArn = process.env.STATE_MACHINE_ARN || process.env.WORKFLOW_STATE_MACHINE_ARN;
         
+        if (!stateMachineArn) {
+          logger.error('State Machine ARN not configured');
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+              error: 'Configuration error',
+              message: 'State Machine ARN not configured'
+            })
+          };
+        }
+
         // Update status to processing
         await updateRunStatus(run.runId, run.timestamp, {
           status: 'processing'
         });
+
+        // Prepare Step Functions input
+        const stepFunctionsInput = {
+          runId: run.runId,
+          timestamp: run.timestamp,
+          templateId: funnelTemplate.funnelTemplateId,
+          templateVersion: 'latest',
+          input: {
+            input_as_text: body.customInstructions || 'Please rewrite the funnel JSON according to the brand style guide and avatar provided.',
+            funnelTemplateId: body.funnelTemplateId,
+            brandGuideId: body.brandGuideId
+          },
+          // Pass brand guide and template funnel directly to avoid DB lookup
+          brandGuide: brandGuide.content,
+          templateFunnel: funnelTemplate.funnelJson,
+          initiatedBy: 'api',
+          source: 'workflow-api'
+        };
+
+        // Start Step Functions execution
+        logger.info('Starting Step Functions execution', { 
+          runId: run.runId,
+          stateMachineArn 
+        });
         
-        // Run workflow in background (in production, you'd use Step Functions)
-        runWorkflow(workflowInput, apiKey).then(async result => {
-          logger.info('Workflow completed successfully', {
-            runId: run.runId,
-            outputLength: result.output_text?.length || 0
+        const sfnClient = new SFNClient({ region: process.env.AWS_REGION || 'us-west-2' });
+        
+        try {
+          const executionName = `run-${run.runId}-${Date.now()}`;
+          const command = new StartExecutionCommand({
+            stateMachineArn,
+            input: JSON.stringify(stepFunctionsInput),
+            name: executionName
           });
+
+          const result = await sfnClient.send(command);
           
-          // Update run status to completed
-          await updateRunStatus(run.runId, run.timestamp, {
-            status: 'completed',
-            output: {
-              output_text: result.output_text,
-              timestamp: new Date().toISOString()
-            },
-            cost: result.cost || {},
-            imageProcessingResults: result.image_processing_stats || [],
-            endTime: new Date().toISOString(),
-            duration: result.duration || 0
+          logger.info('Step Functions execution started', {
+            runId: run.runId,
+            executionArn: result.executionArn
           });
-        }).catch(async error => {
-          logger.error('Workflow execution failed', error, { runId: run.runId });
+
+          // Store execution ARN in run metadata
+          await updateRunStatus(run.runId, run.timestamp, {
+            metadata: {
+              stepFunctionsExecutionArn: result.executionArn,
+              stepFunctionsExecutionName: executionName
+            }
+          });
+        } catch (error) {
+          logger.error('Failed to start Step Functions execution', error, { runId: run.runId });
           
           // Update run status to failed
           await updateRunStatus(run.runId, run.timestamp, {
             status: 'failed',
             output: {
-              error: error.message,
+              error: `Failed to start workflow: ${error.message}`,
               timestamp: new Date().toISOString()
             },
             endTime: new Date().toISOString()
           });
-        });
+          
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+              error: 'Failed to start workflow',
+              message: error.message,
+              runId: run.runId
+            })
+          };
+        }
 
         return {
           statusCode: 202,

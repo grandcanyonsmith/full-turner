@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 
 /**
  * Lambda handler for initializing a run
+ * Note: If runId and timestamp are already in the event, this just passes through
  * @param {Object} event - Step Functions event
  * @param {Object} context - Lambda context
  * @returns {Promise<Object>} - Run initialization result
@@ -18,6 +19,17 @@ export async function handler(event, context) {
   setLogContext(requestId);
 
   try {
+    // If runId and timestamp are already present, this run was already created
+    // Just pass through the event
+    if (event.runId && event.timestamp) {
+      logger.info('Run already initialized, passing through', {
+        runId: event.runId,
+        timestamp: event.timestamp
+      });
+      return event;
+    }
+
+    // Otherwise, create a new run
     logger.info('Initializing processing run', {
       templateId: event.templateId,
       templateVersion: event.templateVersion

@@ -43,6 +43,10 @@ Resources:
             TableName: processingRuns
         - DynamoDBCrudPolicy:
             TableName: outputLogs
+        - DynamoDBCrudPolicy:
+            TableName: brandGuides
+        - DynamoDBCrudPolicy:
+            TableName: funnelTemplates
         - S3ReadPolicy:
             BucketName: !Ref S3BucketParam
         - S3WritePolicy:
