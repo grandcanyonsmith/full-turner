@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Turner - Runs Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Full Turner - Runs Dashboard</h1>
+            <p class="subtitle">View all processing runs and their outputs</p>
+        </header>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading runs...</p>
+        </div>
+
+        <div class="error" id="error" style="display: none;">
+            <p id="errorMessage"></p>
+        </div>
+
+        <div class="runs-container" id="runsContainer" style="display: none;">
+            <div class="runs-header">
+                <h2>Processing Runs</h2>
+                <div class="controls">
+                    <button id="newRunBtn" class="btn btn-primary">Create New Run</button>
+                    <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+            </div>
+
+            <table class="runs-table">
+                <thead>
+                    <tr>
+                        <th>Run ID</th>
+                        <th>Template ID</th>
+                        <th>Status</th>
+                        <th>Timestamp</th>
+                        <th>Cost</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="runsTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="new-run-form" id="newRunForm" style="display: none;">
+            <div class="form-header">
+                <h2>Create New Run</h2>
+                <button id="closeFormBtn" class="btn btn-secondary">Cancel</button>
+            </div>
+
+            <div class="form-content">
+                <form id="createRunForm">
+                    <div class="form-group">
+                        <label for="funnelTemplateSelect">Funnel Template *</label>
+                        <div class="select-with-preview">
+                            <select id="funnelTemplateSelect" name="funnelTemplateId" required>
+                                <option value="">Select a funnel template...</option>
+                            </select>
+                            <button type="button" id="previewFunnelBtn" class="btn btn-preview" disabled>Preview</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brandGuideSelect">Brand Guide *</label>
+                        <div class="select-with-preview">
+                            <select id="brandGuideSelect" name="brandGuideId" required>
+                                <option value="">Select a brand guide...</option>
+                            </select>
+                            <button type="button" id="previewBrandBtn" class="btn btn-preview" disabled>Preview</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customInstructions">Custom Instructions (Optional)</label>
+                        <textarea id="customInstructions" name="customInstructions" rows="4" placeholder="Add any custom instructions for the workflow..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Run</button>
+                        <button type="button" id="cancelFormBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="run-detail" id="runDetail" style="display: none;">
+            <div class="detail-header">
+                <h2>Run Details</h2>
+                <button id="closeDetailBtn" class="btn btn-secondary">Close</button>
+            </div>
+
+            <div class="detail-content">
+                <div class="detail-section">
+                    <h3>Basic Information</h3>
+                    <div class="info-grid" id="basicInfo">
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Input</h3>
+                    <pre class="json-viewer" id="inputViewer"></pre>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Output</h3>
+                    <pre class="json-viewer" id="outputViewer"></pre>
+                </div>
+
+                <div class="detail-section">
+                    <h3>HTML Visualization</h3>
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="opt">Opt-in Page</button>
+                        <button class="tab-btn" data-tab="ty">Thank You Page</button>
+                        <button class="tab-btn" data-tab="dl">Download Page</button>
+                        <button class="tab-btn" data-tab="email">Email Preview</button>
+                    </div>
+                    <div class="visualization-container">
+                        <iframe id="visualizationFrame" class="visualization-frame"></iframe>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Image Processing Results</h3>
+                    <div id="imageResults">
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Cost Breakdown</h3>
+                    <div class="info-grid" id="costInfo">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-modal" id="previewModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="previewTitle">Preview</h2>
+                    <button id="closePreviewBtn" class="btn btn-secondary">Close</button>
+                </div>
+                <div class="modal-body">
+                    <div id="previewContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+

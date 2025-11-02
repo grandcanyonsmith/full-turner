@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Full Turner - Lambda Function URL for API Access
+
+Parameters:
+  OpenAIModel:
+    Type: String
+    Default: gpt-5
+  OpenAIImageModel:
+    Type: String
+    Default: gpt-image-1
+  S3BucketParam:
+    Type: String
+    Default: cc360-pages
+  DependenciesLayerArn:
+    Type: String
+    Default: arn:aws:lambda:us-west-2:471112574622:layer:full-turner-dependencies:7
+
+Resources:
+  WorkflowAPI:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: full-turner-workflow-api
+      Handler: api/workflowApi.handler
+      CodeUri: ../
+      Runtime: nodejs20.x
+      Timeout: 900
+      MemorySize: 3008
+      Layers:
+        - !Ref DependenciesLayerArn
+      Environment:
+        Variables:
+          TEMPLATES_TABLE: templates
+          PROCESSING_RUNS_TABLE: processingRuns
+          OUTPUT_LOGS_TABLE: outputLogs
+          S3_BUCKET: !Ref S3BucketParam
+          OPENAI_MODEL: !Ref OpenAIModel
+          OPENAI_IMAGE_MODEL: !Ref OpenAIImageModel
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: templates
+        - DynamoDBCrudPolicy:
+            TableName: processingRuns
+        - DynamoDBCrudPolicy:
+            TableName: outputLogs
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketParam
+        - S3WritePolicy:
+            BucketName: !Ref S3BucketParam
+        - SecretsManagerReadWrite
+
+  WorkflowAPIUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt WorkflowAPI.Arn
+      AuthType: NONE
+      Cors:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - POST
+        AllowHeaders:
+          - Content-Type
+
+Outputs:
+  WorkflowApiUrl:
+    Description: Lambda Function URL endpoint
+    Value: !GetAtt WorkflowAPIUrl.FunctionUrl
+    Export:
+      Name: !Sub ${AWS::StackName}-WorkflowApiUrl

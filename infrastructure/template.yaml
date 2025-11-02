@@ -1,0 +1,426 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Full Turner - Template Processing Workflow with Step Functions
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 2048
+    Runtime: nodejs20.x
+    Layers:
+      - !Ref DependenciesLayerArn
+    Environment:
+      Variables:
+        TEMPLATES_TABLE: !Ref TemplatesTable
+        PROCESSING_RUNS_TABLE: !Ref ProcessingRunsTable
+        OUTPUT_LOGS_TABLE: !Ref OutputLogsTable
+        LOG_GROUP_NAME: !Ref LogGroup
+        S3_BUCKET: !Ref S3BucketParam
+        OPENAI_MODEL: !Ref OpenAIModel
+        OPENAI_IMAGE_MODEL: !Ref OpenAIImageModel
+
+Parameters:
+  OpenAIModel:
+    Type: String
+    Default: gpt-5
+    Description: OpenAI model to use for agent
+  OpenAIImageModel:
+    Type: String
+    Default: gpt-image-1
+    Description: OpenAI image generation model
+  S3BucketParam:
+    Type: String
+    Default: cc360-pages
+    Description: S3 bucket for storing processed images
+  DependenciesLayerArn:
+    Type: String
+    Default: arn:aws:lambda:us-west-2:471112574622:layer:full-turner-dependencies:7
+    Description: ARN of the deployed Lambda Layer for dependencies
+
+Resources:
+  # DynamoDB Tables
+  TemplatesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: templates
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: templateId
+          AttributeType: S
+        - AttributeName: version
+          AttributeType: S
+      KeySchema:
+        - AttributeName: templateId
+          KeyType: HASH
+        - AttributeName: version
+          KeyType: RANGE
+
+  ProcessingRunsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: processingRuns
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: runId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: templateId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: runId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: templateId-timestamp-index
+          KeySchema:
+            - AttributeName: templateId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  OutputLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: outputLogs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: runId
+          AttributeType: S
+        - AttributeName: logType
+          AttributeType: S
+      KeySchema:
+        - AttributeName: runId
+          KeyType: HASH
+        - AttributeName: logType
+          KeyType: RANGE
+
+  # CloudWatch Log Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/full-turner
+      RetentionInDays: 30
+
+  # S3 Bucket (use existing bucket - don't create if it exists)
+  # Note: If bucket doesn't exist, create it manually or update this template
+  # S3Bucket:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     BucketName: !Ref S3BucketParam
+  #     PublicAccessBlockConfiguration:
+  #       BlockPublicAcls: false
+  #       BlockPublicPolicy: false
+  #       IgnorePublicAcls: false
+  #       RestrictPublicBuckets: false
+
+  # Lambda Functions
+  InitializeRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: full-turner-initialize-run
+      Handler: lambda/initializeRun.handler
+      CodeUri: ../
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProcessingRunsTable
+        - SecretsManagerReadWrite
+
+  LoadTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: full-turner-load-template
+      Handler: lambda/loadTemplate.handler
+      CodeUri: ../
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TemplatesTable
+
+  ProcessImagesBatchFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: false
+        External:
+          - openai
+          - '@openai/agents'
+          - '@aws-sdk/*'
+    Properties:
+      FunctionName: full-turner-process-images-batch
+      Handler: lambda/processImagesBatch.handler
+      CodeUri: ../
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketParam
+        - S3WritePolicy:
+            BucketName: !Ref S3BucketParam
+        - SecretsManagerReadWrite
+      Environment:
+        Variables:
+          IMAGE_PROCESSING_CONCURRENCY: 3
+
+  ProcessImageFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: false
+        External:
+          - openai
+          - '@openai/agents'
+          - '@aws-sdk/*'
+    Properties:
+      FunctionName: full-turner-process-image
+      Handler: lambda/processImage.handler
+      CodeUri: ../
+      Timeout: 600
+      MemorySize: 3008
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketParam
+        - S3WritePolicy:
+            BucketName: !Ref S3BucketParam
+        - SecretsManagerReadWrite
+
+  AggregateImageResultsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: false
+        External:
+          - openai
+          - '@openai/agents'
+          - '@aws-sdk/*'
+    Properties:
+      FunctionName: full-turner-aggregate-image-results
+      Handler: lambda/processImagesBatch.aggregateResults
+      CodeUri: ../
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProcessingRunsTable
+
+  ExecuteAgentFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: false
+        External:
+          - openai
+          - '@openai/agents'
+          - '@aws-sdk/*'
+    Properties:
+      FunctionName: full-turner-execute-agent
+      Handler: lambda/executeAgent.handler
+      CodeUri: ../
+      Timeout: 900
+      MemorySize: 3008
+      Policies:
+        - SecretsManagerReadWrite
+
+  SaveOutputFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: full-turner-save-output
+      Handler: lambda/saveOutput.handler
+      CodeUri: ../
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProcessingRunsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OutputLogsTable
+
+  HandleFailureFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: false
+        External:
+          - openai
+          - '@openai/agents'
+          - '@aws-sdk/*'
+    Properties:
+      FunctionName: full-turner-handle-failure
+      Handler: lambda/handleFailure.handler
+      CodeUri: ../
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProcessingRunsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OutputLogsTable
+
+  # Step Functions State Machine
+  WorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: full-turner-workflow
+      DefinitionString: !Sub |
+        {
+          "Comment": "Full Turner Workflow",
+          "StartAt": "InitializeRun",
+          "States": {
+            "InitializeRun": {
+              "Type": "Task",
+              "Resource": "${InitializeRunFunction.Arn}",
+              "Next": "LoadTemplate",
+              "Catch": [{
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "HandleFailure"
+              }]
+            },
+            "LoadTemplate": {
+              "Type": "Task",
+              "Resource": "${LoadTemplateFunction.Arn}",
+              "Next": "ProcessImagesBatch",
+              "Retry": [{
+                "ErrorEquals": ["States.TaskFailed"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }],
+              "Catch": [{
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "HandleFailure"
+              }]
+            },
+            "ProcessImagesBatch": {
+              "Type": "Task",
+              "Resource": "${ProcessImagesBatchFunction.Arn}",
+              "Next": "ProcessImagesMap"
+            },
+            "ProcessImagesMap": {
+              "Type": "Map",
+              "ItemsPath": "$.images",
+              "MaxConcurrency": 3,
+              "Iterator": {
+                "StartAt": "ProcessImage",
+                "States": {
+                  "ProcessImage": {
+                    "Type": "Task",
+                    "Resource": "${ProcessImageFunction.Arn}",
+                    "End": true,
+                    "Retry": [{
+                      "ErrorEquals": ["States.TaskFailed"],
+                      "IntervalSeconds": 2,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2
+                    }]
+                  }
+                }
+              },
+              "ResultPath": "$.imageResults",
+              "Next": "AggregateImageResults"
+            },
+            "AggregateImageResults": {
+              "Type": "Task",
+              "Resource": "${AggregateImageResultsFunction.Arn}",
+              "Next": "ExecuteAgent"
+            },
+            "ExecuteAgent": {
+              "Type": "Task",
+              "Resource": "${ExecuteAgentFunction.Arn}",
+              "Next": "SaveOutput",
+              "Retry": [{
+                "ErrorEquals": ["States.TaskFailed"],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 2,
+                "BackoffRate": 2
+              }],
+              "Catch": [{
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "HandleFailure"
+              }]
+            },
+            "SaveOutput": {
+              "Type": "Task",
+              "Resource": "${SaveOutputFunction.Arn}",
+              "End": true
+            },
+            "HandleFailure": {
+              "Type": "Task",
+              "Resource": "${HandleFailureFunction.Arn}",
+              "End": true
+            }
+          }
+        }
+      RoleArn: !GetAtt StepFunctionsRole.Arn
+
+  # IAM Role for Step Functions
+  StepFunctionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambdaFunctions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt InitializeRunFunction.Arn
+                  - !GetAtt LoadTemplateFunction.Arn
+                  - !GetAtt ProcessImagesBatchFunction.Arn
+                  - !GetAtt ProcessImageFunction.Arn
+                  - !GetAtt AggregateImageResultsFunction.Arn
+                  - !GetAtt ExecuteAgentFunction.Arn
+                  - !GetAtt SaveOutputFunction.Arn
+                  - !GetAtt HandleFailureFunction.Arn
+
+Outputs:
+  StateMachineArn:
+    Description: Step Functions State Machine ARN
+    Value: !Ref WorkflowStateMachine
+    Export:
+      Name: !Sub ${AWS::StackName}-StateMachineArn
+
+  StateMachineName:
+    Description: Step Functions State Machine Name
+    Value: !Ref WorkflowStateMachine
+    Export:
+      Name: !Sub ${AWS::StackName}-StateMachineName
+
+  TemplatesTableName:
+    Description: Templates DynamoDB Table Name
+    Value: !Ref TemplatesTable
+    Export:
+      Name: !Sub ${AWS::StackName}-TemplatesTable
+
+  ProcessingRunsTableName:
+    Description: Processing Runs DynamoDB Table Name
+    Value: !Ref ProcessingRunsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-ProcessingRunsTable
+
+  OutputLogsTableName:
+    Description: Output Logs DynamoDB Table Name
+    Value: !Ref OutputLogsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-OutputLogsTable
+

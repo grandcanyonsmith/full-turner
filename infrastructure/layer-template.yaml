@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Full Turner - Lambda Dependencies Layer Only
+
+Resources:
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: full-turner-dependencies
+      Description: Node.js dependencies for Full Turner
+      ContentUri: ../layer/
+      CompatibleRuntimes:
+        - nodejs20.x
+      RetentionPolicy: Retain
+
+Outputs:
+  DependenciesLayerArn:
+    Description: ARN of the Lambda Layer
+    Value: !Ref DependenciesLayer
+    Export:
+      Name: !Sub ${AWS::StackName}-DependenciesLayerArn
+
