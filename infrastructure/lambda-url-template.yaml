@@ -15,6 +15,10 @@ Parameters:
   DependenciesLayerArn:
     Type: String
     Default: arn:aws:lambda:us-west-2:471112574622:layer:full-turner-dependencies:7
+  StateMachineArn:
+    Type: String
+    Description: ARN of the Step Functions state machine
+    Default: arn:aws:states:us-west-2:471112574622:stateMachine:full-turner-workflow
 
 Resources:
   WorkflowAPI:
@@ -33,9 +37,12 @@ Resources:
           TEMPLATES_TABLE: templates
           PROCESSING_RUNS_TABLE: processingRuns
           OUTPUT_LOGS_TABLE: outputLogs
+          BRAND_GUIDES_TABLE: brandGuides
+          FUNNEL_TEMPLATES_TABLE: funnelTemplates
           S3_BUCKET: !Ref S3BucketParam
           OPENAI_MODEL: !Ref OpenAIModel
           OPENAI_IMAGE_MODEL: !Ref OpenAIImageModel
+          STATE_MACHINE_ARN: !Ref StateMachineArn
       Policies:
         - DynamoDBCrudPolicy:
             TableName: templates
@@ -52,6 +59,11 @@ Resources:
         - S3WritePolicy:
             BucketName: !Ref S3BucketParam
         - SecretsManagerReadWrite
+        - Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource: !Ref StateMachineArn
 
   WorkflowAPIUrl:
     Type: AWS::Lambda::Url

@@ -296,7 +296,7 @@ export async function handler(event, context) {
           stateMachineArn 
         });
         
-        const sfnClient = new SFNClient({ region: process.env.AWS_REGION || 'us-west-2' });
+        const sfnClient = new SFNClient({ region: context.invokedFunctionArn?.split(':')[3] || 'us-west-2' });
         
         try {
           const executionName = `run-${run.runId}-${Date.now()}`;
