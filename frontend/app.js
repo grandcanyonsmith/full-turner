@@ -34,6 +34,8 @@ let currentRuns = [];
 let selectedRun = null;
 let funnelTemplates = [];
 let brandGuides = [];
+let refreshInterval = null;
+let detailRefreshInterval = null;
 
 /**
  * Initialize the application
@@ -151,6 +153,25 @@ async function loadRuns() {
         displayRuns(currentRuns);
         hideLoading();
         showRunsContainer();
+        
+        // Auto-refresh if there are pending/processing runs
+        const hasActiveRuns = currentRuns.some(run => 
+            run.status === 'pending' || run.status === 'processing'
+        );
+        
+        if (hasActiveRuns && !refreshInterval) {
+            console.log('Starting auto-refresh for active runs...');
+            refreshInterval = setInterval(() => {
+                console.log('Auto-refreshing runs list...');
+                loadRuns().catch(error => {
+                    console.error('Auto-refresh error:', error);
+                });
+            }, 10000); // Refresh every 10 seconds
+        } else if (!hasActiveRuns && refreshInterval) {
+            console.log('Stopping auto-refresh - no active runs');
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
     } catch (error) {
         if (timeoutId) clearTimeout(timeoutId);
         console.error('Error loading runs:', error);
@@ -211,23 +232,61 @@ function displayRuns(runs) {
 async function showRunDetail(runId) {
     showLoading();
     hideError();
+    
+    // Clear any existing detail refresh interval
+    if (detailRefreshInterval) {
+        clearInterval(detailRefreshInterval);
+        detailRefreshInterval = null;
+    }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/runs/${runId}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to load run details');
+        await loadRunDetail(runId);
+        
+        // If run is pending or processing, auto-refresh every 5 seconds
+        if (selectedRun && (selectedRun.status === 'pending' || selectedRun.status === 'processing')) {
+            detailRefreshInterval = setInterval(async () => {
+                console.log('Auto-refreshing run detail...');
+                await loadRunDetail(runId);
+                
+                // Stop auto-refresh if run is completed or failed
+                if (selectedRun && (selectedRun.status === 'completed' || selectedRun.status === 'failed')) {
+                    clearInterval(detailRefreshInterval);
+                    detailRefreshInterval = null;
+                }
+            }, 5000); // Refresh every 5 seconds
         }
-
-        selectedRun = data.run;
-        displayRunDetail(selectedRun);
+        
         hideLoading();
         showRunDetailView();
     } catch (error) {
         console.error('Error loading run detail:', error);
         showError(error.message || 'Failed to load run details');
         hideLoading();
+    }
+}
+
+/**
+ * Load run detail data
+ */
+async function loadRunDetail(runId) {
+    const response = await fetch(`${API_BASE_URL}/runs/${runId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Failed to load run details');
+    }
+
+    selectedRun = data.run;
+    displayRunDetail(selectedRun);
+    
+    // Also refresh the runs list if we're viewing the detail
+    if (document.getElementById('runDetail').style.display !== 'none') {
+        // Update the run in the current runs list
+        const index = currentRuns.findIndex(r => r.runId === runId);
+        if (index !== -1) {
+            currentRuns[index] = selectedRun;
+            displayRuns(currentRuns);
+        }
     }
 }
 
@@ -466,6 +525,12 @@ function showRunDetailView() {
 }
 
 function closeRunDetail() {
+    // Clear detail refresh interval when closing
+    if (detailRefreshInterval) {
+        clearInterval(detailRefreshInterval);
+        detailRefreshInterval = null;
+    }
+    
     document.getElementById('runDetail').style.display = 'none';
     document.getElementById('runsContainer').style.display = 'block';
 }

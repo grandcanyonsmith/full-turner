@@ -6,7 +6,7 @@
 import { setDefaultOpenAIKey } from '@openai/agents';
 import { getOpenAIKeyFromAWS } from '../src/services/aws.js';
 import { runWorkflow } from '../src/agent/workflow.js';
-import { listAllRuns, getRun, createRun } from '../src/services/database.js';
+import { listAllRuns, getRun, createRun, updateRunStatus } from '../src/services/database.js';
 import { listTemplates, getTemplate } from '../src/services/database.js';
 import { listBrandGuides, getBrandGuide } from '../src/services/database.js';
 import { listFunnelTemplates, getFunnelTemplate } from '../src/services/database.js';
@@ -269,14 +269,42 @@ export async function handler(event, context) {
         // Start workflow execution (async - don't wait for completion)
         logger.info('Starting workflow execution', { runId: run.runId });
         
+        // Update status to processing
+        await updateRunStatus(run.runId, run.timestamp, {
+          status: 'processing'
+        });
+        
         // Run workflow in background (in production, you'd use Step Functions)
-        runWorkflow(workflowInput, apiKey).then(result => {
+        runWorkflow(workflowInput, apiKey).then(async result => {
           logger.info('Workflow completed successfully', {
             runId: run.runId,
             outputLength: result.output_text?.length || 0
           });
-        }).catch(error => {
+          
+          // Update run status to completed
+          await updateRunStatus(run.runId, run.timestamp, {
+            status: 'completed',
+            output: {
+              output_text: result.output_text,
+              timestamp: new Date().toISOString()
+            },
+            cost: result.cost || {},
+            imageProcessingResults: result.image_processing_stats || [],
+            endTime: new Date().toISOString(),
+            duration: result.duration || 0
+          });
+        }).catch(async error => {
           logger.error('Workflow execution failed', error, { runId: run.runId });
+          
+          // Update run status to failed
+          await updateRunStatus(run.runId, run.timestamp, {
+            status: 'failed',
+            output: {
+              error: error.message,
+              timestamp: new Date().toISOString()
+            },
+            endTime: new Date().toISOString()
+          });
         });
 
         return {
