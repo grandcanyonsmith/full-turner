@@ -115,9 +115,22 @@ async function loadRuns() {
     hideError();
     hideRunsContainer();
 
+    let timeoutId;
     try {
         console.log('Fetching runs from:', `${API_BASE_URL}/runs?limit=100`);
-        const response = await fetch(`${API_BASE_URL}/runs?limit=100`);
+        
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(`${API_BASE_URL}/runs?limit=100`, {
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        clearTimeout(timeoutId);
         
         console.log('Response status:', response.status, response.statusText);
         
@@ -139,8 +152,19 @@ async function loadRuns() {
         hideLoading();
         showRunsContainer();
     } catch (error) {
+        if (timeoutId) clearTimeout(timeoutId);
         console.error('Error loading runs:', error);
-        showError(error.message || 'Failed to load runs. Check console for details.');
+        
+        let errorMessage = 'Failed to load runs. ';
+        if (error.name === 'AbortError') {
+            errorMessage += 'Request timed out. The API may be slow or unavailable.';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage += 'Network error. Check if the API is accessible.';
+        } else {
+            errorMessage += error.message || 'Check console for details.';
+        }
+        
+        showError(errorMessage);
         hideLoading();
         // Still show the container even if there's an error
         showRunsContainer();
@@ -446,17 +470,24 @@ function closeRunDetail() {
     document.getElementById('runsContainer').style.display = 'block';
 }
 
-/**
- * Load funnel templates from API
- */
 async function loadFunnelTemplates() {
     try {
-        const response = await fetch(`${API_BASE_URL}/funnel-templates`);
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            funnelTemplates = data.funnelTemplates || [];
-            populateFunnelTemplateSelect();
+        console.log('Fetching funnel templates from:', `${API_BASE_URL}/funnel-templates`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`${API_BASE_URL}/funnel-templates`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok && response.status === 200) {
+            const data = await response.json();
+            if (data.success) {
+                funnelTemplates = data.funnelTemplates || [];
+                populateFunnelTemplateSelect();
+            }
         }
     } catch (error) {
         console.error('Error loading funnel templates:', error);
@@ -468,12 +499,22 @@ async function loadFunnelTemplates() {
  */
 async function loadBrandGuides() {
     try {
-        const response = await fetch(`${API_BASE_URL}/brand-guides`);
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            brandGuides = data.brandGuides || [];
-            populateBrandGuideSelect();
+        console.log('Fetching brand guides from:', `${API_BASE_URL}/brand-guides`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`${API_BASE_URL}/brand-guides`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok && response.status === 200) {
+            const data = await response.json();
+            if (data.success) {
+                brandGuides = data.brandGuides || [];
+                populateBrandGuideSelect();
+            }
         }
     } catch (error) {
         console.error('Error loading brand guides:', error);
