@@ -421,6 +421,11 @@ function showRunDetailView() {
     document.getElementById('runsContainer').style.display = 'none';
 }
 
+function closeRunDetail() {
+    document.getElementById('runDetail').style.display = 'none';
+    document.getElementById('runsContainer').style.display = 'block';
+}
+
 /**
  * Load funnel templates from API
  */
