@@ -11,6 +11,17 @@
       "source": "/(.*)",
       "destination": "/frontend/$1"
     }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-API-URL",
+          "value": "https://i5of4xggwlglu3f477pzq24o7u0jrwms.lambda-url.us-west-2.on.aws"
+        }
+      ]
+    }
   ]
 }
 

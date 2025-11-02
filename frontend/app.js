@@ -3,17 +3,24 @@
  */
 
 // Configure your API endpoint URL here
-// For local development: 'http://localhost:3000/api' (mock API server)
-// For production: Your API Gateway URL (e.g., 'https://abc123.execute-api.us-west-2.amazonaws.com/prod')
-const API_BASE_URL = window.API_BASE_URL || (() => {
+// For local development: 'http://localhost:8080/api' (mock API server)
+// For production: Uses Lambda Function URL from Vercel environment variable
+const API_BASE_URL = (() => {
+    // Check if API_BASE_URL is set via window (from Vercel env var or manual config)
+    if (window.API_BASE_URL && window.API_BASE_URL !== '%API_BASE_URL%') {
+        return window.API_BASE_URL;
+    }
+    
     // Try to detect API URL from current location
     const origin = window.location.origin;
+    
     // If running locally, use mock API server on port 8080
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
         return 'http://localhost:8080/api';
     }
-    // For production, you'll need to set this manually
-    return origin + '/api';
+    
+    // For production, use the Lambda Function URL
+    return 'https://i5of4xggwlglu3f477pzq24o7u0jrwms.lambda-url.us-west-2.on.aws';
 })();
 
 let currentRuns = [];
