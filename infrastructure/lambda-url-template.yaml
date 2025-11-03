@@ -74,6 +74,7 @@ Resources:
         AllowOrigins:
           - '*'
         AllowMethods:
+          - GET
           - POST
         AllowHeaders:
           - Content-Type

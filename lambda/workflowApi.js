@@ -21,21 +21,11 @@ export async function handler(event, context) {
   const requestId = context.requestId || randomUUID();
   setLogContext(requestId);
 
+  // CORS headers are handled by Lambda Function URL configuration
+  // Only set Content-Type header to avoid duplicate CORS headers
   const headers = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+    'Content-Type': 'application/json'
   };
-
-  // Handle CORS preflight
-  if (event.requestContext?.http?.method === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
-  }
 
   const method = event.requestContext?.http?.method;
   const path = event.requestContext?.http?.path || event.path || '';
