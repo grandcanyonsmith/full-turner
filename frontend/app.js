@@ -591,6 +591,11 @@ async function loadBrandGuides() {
  */
 function populateFunnelTemplateSelect() {
     const select = document.getElementById('funnelTemplateSelect');
+    if (!select) {
+        console.warn('funnelTemplateSelect element not found');
+        return;
+    }
+    
     // Clear existing options except the first one
     select.innerHTML = '<option value="">Select a funnel template...</option>';
     
@@ -607,6 +612,11 @@ function populateFunnelTemplateSelect() {
  */
 function populateBrandGuideSelect() {
     const select = document.getElementById('brandGuideSelect');
+    if (!select) {
+        console.warn('brandGuideSelect element not found');
+        return;
+    }
+    
     // Clear existing options except the first one
     select.innerHTML = '<option value="">Select a brand guide...</option>';
     
