@@ -21,6 +21,44 @@ Parameters:
     Default: arn:aws:states:us-west-2:471112574622:stateMachine:full-turner-workflow
 
 Resources:
+  ProcessWorkflow:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: full-turner-process-workflow
+      Handler: lambda/processWorkflow.handler
+      CodeUri: ../
+      Runtime: nodejs20.x
+      Timeout: 900
+      MemorySize: 3008
+      Layers:
+        - !Ref DependenciesLayerArn
+      Environment:
+        Variables:
+          TEMPLATES_TABLE: templates
+          PROCESSING_RUNS_TABLE: processingRuns
+          OUTPUT_LOGS_TABLE: outputLogs
+          BRAND_GUIDES_TABLE: brandGuides
+          FUNNEL_TEMPLATES_TABLE: funnelTemplates
+          S3_BUCKET: !Ref S3BucketParam
+          OPENAI_MODEL: !Ref OpenAIModel
+          OPENAI_IMAGE_MODEL: !Ref OpenAIImageModel
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: templates
+        - DynamoDBCrudPolicy:
+            TableName: processingRuns
+        - DynamoDBCrudPolicy:
+            TableName: outputLogs
+        - DynamoDBCrudPolicy:
+            TableName: brandGuides
+        - DynamoDBCrudPolicy:
+            TableName: funnelTemplates
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketParam
+        - S3WritePolicy:
+            BucketName: !Ref S3BucketParam
+        - SecretsManagerReadWrite
+
   WorkflowAPI:
     Type: AWS::Serverless::Function
     Properties:
