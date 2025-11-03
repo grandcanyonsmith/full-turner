@@ -274,17 +274,40 @@ export async function updateRunStatus(runId, timestamp, updates) {
  * @returns {Promise<Object|null>} - Run object or null
  */
 export async function getRun(runId) {
-  // Note: This is inefficient - in production you'd use a GSI with runId as PK
-  const result = await docClient.send(new ScanCommand({
-    TableName: TABLES.PROCESSING_RUNS,
-    FilterExpression: 'runId = :runId',
-    ExpressionAttributeValues: {
-      ':runId': runId
-    },
-    Limit: 1
-  }));
+  if (LOCAL_TEST) {
+    // Find run by runId in local test mode
+    const runs = Object.values(localDb.runs);
+    return runs.find(r => r.runId === runId) || null;
+  }
 
-  return result.Items && result.Items.length > 0 ? result.Items[0] : null;
+  // Note: This is inefficient - in production you'd use a GSI with runId as PK
+  // Scan with pagination to find the matching run
+  let lastEvaluatedKey = null;
+  
+  do {
+    const params = {
+      TableName: TABLES.PROCESSING_RUNS,
+      FilterExpression: 'runId = :runId',
+      ExpressionAttributeValues: {
+        ':runId': runId
+      }
+    };
+
+    if (lastEvaluatedKey) {
+      params.ExclusiveStartKey = lastEvaluatedKey;
+    }
+
+    const result = await docClient.send(new ScanCommand(params));
+
+    if (result.Items && result.Items.length > 0) {
+      // Found the run
+      return result.Items[0];
+    }
+
+    lastEvaluatedKey = result.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return null;
 }
 
 /**
