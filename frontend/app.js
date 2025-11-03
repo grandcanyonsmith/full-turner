@@ -335,8 +335,10 @@ function displayRunDetail(run) {
 
     // Output
     const outputViewer = document.getElementById('outputViewer');
-    const outputText = run.output?.output_text || run.output || '';
-    outputViewer.textContent = typeof outputText === 'string' ? outputText : JSON.stringify(outputText, null, 2);
+    const outputRaw = run.output?.output_text || run.output || '';
+    // Ensure outputText is always a string for parseOutput
+    const outputText = typeof outputRaw === 'string' ? outputRaw : JSON.stringify(outputRaw, null, 2);
+    outputViewer.textContent = outputText;
 
     // Parse and render funnel HTML
     const parsedOutput = parseOutput(outputText);
