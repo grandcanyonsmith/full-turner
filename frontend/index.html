@@ -154,7 +154,8 @@
     <script>
         // Inject API_BASE_URL from Vercel environment variable
         // This will be replaced at build time by Vercel
-        window.API_BASE_URL = '%API_BASE_URL%' || 'https://i5of4xggwlglu3f477pzq24o7u0jrwms.lambda-url.us-west-2.on.aws';
+        // Force use Lambda URL even when running locally
+        window.API_BASE_URL = 'https://i5of4xggwlglu3f477pzq24o7u0jrwms.lambda-url.us-west-2.on.aws';
     </script>
     <script src="renderer.js"></script>
     <script src="app.js"></script>
