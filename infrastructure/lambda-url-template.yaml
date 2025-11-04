@@ -70,18 +70,7 @@ Resources:
     Properties:
       TargetFunctionArn: !GetAtt WorkflowAPI.Arn
       AuthType: NONE
-      Cors:
-        AllowOrigins:
-          - '*'
-        AllowMethods:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-        AllowHeaders:
-          - Content-Type
-          - Authorization
-          - X-Requested-With
+      # CORS is handled in Lambda function code to avoid duplicate headers
 
 Outputs:
   WorkflowApiUrl:

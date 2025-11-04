@@ -23,10 +23,26 @@ export async function handler(event, context) {
   const requestId = context.requestId || randomUUID();
   setLogContext(requestId);
 
-  // Lambda Function URLs handle CORS automatically, so we don't need to set headers
-  // But we'll set minimal headers for compatibility
+  // Get origin from request headers
+  const origin = event.headers?.origin || event.headers?.Origin || '*';
+  
+  // Allowed origins - add your Vercel domains here
+  const allowedOrigins = [
+    'https://full-turner.vercel.app',
+    'https://full-turner-jgrays5b5-grandcanyonsmiths-projects.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+  
+  // Check if origin is allowed (or use wildcard for development)
+  const allowedOrigin = allowedOrigins.includes(origin) ? origin : (origin === '*' ? '*' : allowedOrigins[0]);
+  
+  // Set CORS headers - only set once to avoid duplicates
   const corsHeaders = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
   };
 
   const method = event.requestContext?.http?.method;
