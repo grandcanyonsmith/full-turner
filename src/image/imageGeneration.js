@@ -247,11 +247,21 @@ async function generateImageWithOpenAIInternal(
 ) {
   const LOCAL_TEST = process.env.LOCAL_TEST === 'true';
   
+  // Ensure brandGuide is properly formatted (handle both string and object)
+  let brandGuideForPrompt = brandGuide;
+  if (brandGuide && typeof brandGuide === 'object') {
+    // If it's an object, keep it as-is (extractBrandInfo handles objects)
+    brandGuideForPrompt = brandGuide;
+  } else if (typeof brandGuide !== 'string') {
+    // If it's neither string nor object, stringify it
+    brandGuideForPrompt = JSON.stringify(brandGuide);
+  }
+  
   // Map dimensions to OpenAI size
   const size = mapDimensionsToOpenAISize(width, height);
   console.log(`   Dimensions: ${width}x${height} → OpenAI size: ${size}`);
   
-  const prompt = getImagePrompt(imageType, elementId, transparentBg, brandGuide, elementContext);
+  const prompt = getImagePrompt(imageType, elementId, transparentBg, brandGuideForPrompt, elementContext);
   
   // Log the complete prompt
   console.log("\n" + "=".repeat(80));

@@ -21,8 +21,13 @@ export async function handler(event, context) {
   try {
     const { template, apiKey } = event;
 
+    if (!apiKey) {
+      throw new Error('API key is required but not provided in event');
+    }
+
     logger.info('Preparing image processing batch', {
-      templateId: template.templateId
+      templateId: template.templateId,
+      hasApiKey: !!apiKey
     });
 
     // Extract image URLs from template funnel

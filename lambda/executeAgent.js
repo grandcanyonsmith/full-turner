@@ -3,11 +3,12 @@
  * Executes OpenAI agent to rewrite funnel content
  */
 
-import { Runner, user } from '@openai/agents';
+import { Runner, user, setDefaultOpenAIKey } from '@openai/agents';
 import { createAgent } from '../src/agent/agent.js';
 import { config } from '../src/config/index.js';
 import { logger, setLogContext } from '../src/utils/logger.js';
 import { CostTracker, extractUsageFromResponse } from '../src/utils/costTracker.js';
+import { getOpenAIKeyFromAWS } from '../src/services/aws.js';
 import { randomUUID } from 'crypto';
 
 /**
@@ -24,11 +25,20 @@ export async function handler(event, context) {
   const startTime = Date.now();
 
   try {
-    const { template, imageUrlKeys, imageMap, input } = event;
+    const { template, imageUrlKeys, imageMap, input, apiKey } = event;
+
+    // Get API key from event or retrieve from AWS
+    let openAIApiKey = apiKey;
+    if (!openAIApiKey) {
+      logger.info('API key not in event, retrieving from AWS');
+      openAIApiKey = await getOpenAIKeyFromAWS();
+    }
+    setDefaultOpenAIKey(openAIApiKey);
 
     logger.info('Executing agent', {
       templateId: template.templateId,
-      imageCount: imageUrlKeys?.length || 0
+      imageCount: imageUrlKeys?.length || 0,
+      hasApiKey: !!openAIApiKey
     });
 
     // Prepare image URL keys and mapping for agent

@@ -26,7 +26,10 @@ export async function runWorkflow(workflow, apiKey) {
       brandGuide = readProjectFile(config.paths.brandGuide);
       console.log(`   ✓ Brand guide loaded from file (${brandGuide.length} chars)`);
     } else {
-      console.log(`   ✓ Brand guide provided (${brandGuide.length} chars)`);
+      // Keep brandGuide as object for image processing (extractBrandInfo handles objects)
+      // We'll stringify it later for the agent
+      const length = typeof brandGuide === 'string' ? brandGuide.length : (typeof brandGuide === 'object' ? JSON.stringify(brandGuide).length : 'unknown');
+      console.log(`   ✓ Brand guide provided (${length} chars)`);
     }
     
     if (!templateFunnel) {
@@ -41,6 +44,7 @@ export async function runWorkflow(workflow, apiKey) {
     }
     
     // Process images before agent execution
+    // Pass brandGuide as-is (object or string) - extractBrandInfo handles both
     const { imageUrlKeys, imageMap } = await processImages(templateFunnel, brandGuide, apiKey);
     
     // Prepare image URL keys and mapping for agent
@@ -48,11 +52,11 @@ export async function runWorkflow(workflow, apiKey) {
       ? `\n\n=== IMAGE URL KEYS ===\n${JSON.stringify(imageUrlKeys, null, 2)}\n\n=== PROCESSED IMAGE MAP ===\n${JSON.stringify(imageMap, null, 2)}`
       : "";
     
-    // Combine workflow input with brand guide, template funnel, and processed images
+    // Combine workflow input with brand guide (stringified), template funnel, and processed images
     const combinedInput = `${workflow.input_as_text}
 
 === BRAND STYLE GUIDE & AVATAR ===
-${brandGuide}
+${typeof brandGuide === 'string' ? brandGuide : JSON.stringify(brandGuide)}
 
 === TEMPLATE FUNNEL JSON ===
 ${templateFunnel}${imageUrlKeysText}

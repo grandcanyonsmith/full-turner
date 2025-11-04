@@ -20,8 +20,13 @@ export function extractBrandInfo(brandGuide) {
     visualStyle: []
   };
 
+  // Handle null/undefined
+  if (!brandGuide) {
+    return brandInfo;
+  }
+
   // Check if brandGuide is JSON object (new format)
-  if (brandGuide && typeof brandGuide === 'object' && !Array.isArray(brandGuide)) {
+  if (typeof brandGuide === 'object' && !Array.isArray(brandGuide) && brandGuide !== null) {
     const styleGuide = brandGuide.brandStyleGuide;
     
     if (styleGuide) {
@@ -59,55 +64,59 @@ export function extractBrandInfo(brandGuide) {
       }
     }
     
-    return brandInfo;
+    // Only return early if we found styleGuide, otherwise fall through to string parsing
+    if (styleGuide) {
+      return brandInfo;
+    }
   }
   
   // Fallback to text parsing (old format)
+  // Only proceed if brandGuide is a string - otherwise return empty brandInfo
   if (typeof brandGuide !== 'string') {
     return brandInfo;
   }
   
   // Extract colors from Color Palette section
   // Match Primary color
-  const primaryMatch = brandGuide.match(/Primary:\s*([^(]+)\s*\(#([A-F0-9a-f]+)\)/i);
+  const primaryMatch = typeof brandGuide === 'string' ? brandGuide.match(/Primary:\s*([^(]+)\s*\(#([A-F0-9a-f]+)\)/i) : null;
   if (primaryMatch) {
     brandInfo.primaryColor = primaryMatch[1].trim();
     brandInfo.primaryColorHex = `#${primaryMatch[2].toUpperCase()}`;
   }
   
   // Match Secondary color
-  const secondaryMatch = brandGuide.match(/Secondary:\s*([^(]+)\s*\(#([A-F0-9a-f]+)\)/i);
+  const secondaryMatch = typeof brandGuide === 'string' ? brandGuide.match(/Secondary:\s*([^(]+)\s*\(#([A-F0-9a-f]+)\)/i) : null;
   if (secondaryMatch) {
     brandInfo.secondaryColor = secondaryMatch[1].trim();
     brandInfo.secondaryColorHex = `#${secondaryMatch[2].toUpperCase()}`;
   }
   
   // Match Accent color
-  const accentMatch = brandGuide.match(/Accent:\s*([^(]+)\s*\(#([A-F0-9a-f]+)\)/i);
+  const accentMatch = typeof brandGuide === 'string' ? brandGuide.match(/Accent:\s*([^(]+)\s*\(#([A-F0-9a-f]+)\)/i) : null;
   if (accentMatch) {
     brandInfo.accentColor = accentMatch[1].trim();
     brandInfo.accentColorHex = `#${accentMatch[2].toUpperCase()}`;
   }
   
   // Extract typography
-  const headingMatch = brandGuide.match(/Headings:\s*([^\n]+)/i);
+  const headingMatch = typeof brandGuide === 'string' ? brandGuide.match(/Headings:\s*([^\n]+)/i) : null;
   if (headingMatch) {
     brandInfo.headingFont = headingMatch[1].trim();
   }
   
-  const bodyMatch = brandGuide.match(/Body:\s*([^\n]+)/i);
+  const bodyMatch = typeof brandGuide === 'string' ? brandGuide.match(/Body:\s*([^\n]+)/i) : null;
   if (bodyMatch) {
     brandInfo.bodyFont = bodyMatch[1].trim();
   }
   
   // Extract visual style keywords
-  if (brandGuide.includes("Premium minimalism")) {
+  if (typeof brandGuide === 'string' && brandGuide.includes("Premium minimalism")) {
     brandInfo.visualStyle.push("Premium minimalism");
   }
-  if (brandGuide.includes("clean backgrounds")) {
+  if (typeof brandGuide === 'string' && brandGuide.includes("clean backgrounds")) {
     brandInfo.visualStyle.push("clean backgrounds");
   }
-  if (brandGuide.includes("data visualization")) {
+  if (typeof brandGuide === 'string' && brandGuide.includes("data visualization")) {
     brandInfo.visualStyle.push("data visualization");
   }
   

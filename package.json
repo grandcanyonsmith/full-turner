@@ -10,6 +10,7 @@
     "verify:template": "node scripts/verify-template.js",
     "check:run": "node scripts/check-run.js",
     "get:output": "node scripts/get-output.js",
+    "setup:api-key": "node scripts/setup-api-key.js",
     "invoke:batch": "sam local invoke ProcessImagesBatchFunction --template infrastructure/template.yaml --event events/processImagesBatch.json",
     "invoke:aggregate": "sam local invoke AggregateImageResultsFunction --template infrastructure/template.yaml --event events/aggregateResults.json",
     "local:batch": "node scripts/invoke-local.js ProcessImagesBatchFunction events/processImagesBatch.json",
