@@ -23,10 +23,28 @@ export async function handler(event, context) {
   const requestId = context.requestId || randomUUID();
   setLogContext(requestId);
 
-  // Lambda Function URL handles CORS automatically, so we don't set CORS headers
-  // to avoid duplicate headers
+  // Get origin from request headers
+  const origin = event.headers?.origin || event.headers?.Origin || event.headers?.['x-origin'] || '*';
+  
+  // Allowed origins - add your Vercel domains here
+  const allowedOrigins = [
+    'https://full-turner.vercel.app',
+    'https://full-turner-jgrays5b5-grandcanyonsmiths-projects.vercel.app',
+    'https://full-turner-git-main-grandcanyonsmiths-projects.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+  
+  // Check if origin is allowed (or use wildcard for development)
+  const allowedOrigin = allowedOrigins.includes(origin) ? origin : (origin === '*' ? '*' : allowedOrigins[0]);
+  
+  // Set headers with CORS - Lambda Function URL doesn't handle CORS automatically
   const headers = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Max-Age': '86400'
   };
 
   const method = event.requestContext?.http?.method;
@@ -237,7 +255,7 @@ export async function handler(event, context) {
       // Unknown GET endpoint
       return {
         statusCode: 404,
-        headers: corsHeaders,
+        headers: headers,
         body: JSON.stringify({
           error: 'Not found',
           message: `Endpoint ${path} not found`
@@ -573,7 +591,7 @@ export async function handler(event, context) {
 
       return {
         statusCode: 200,
-        headers: corsHeaders,
+        headers: headers,
         body: JSON.stringify({
           success: true,
           output: result.output_text,
@@ -700,7 +718,7 @@ export async function handler(event, context) {
       // Unknown PUT endpoint
       return {
         statusCode: 404,
-        headers: corsHeaders,
+        headers: headers,
         body: JSON.stringify({
           error: 'Not found',
           message: `Endpoint ${path} not found`
@@ -789,7 +807,7 @@ export async function handler(event, context) {
       // Unknown DELETE endpoint
       return {
         statusCode: 404,
-        headers: corsHeaders,
+        headers: headers,
         body: JSON.stringify({
           error: 'Not found',
           message: `Endpoint ${path} not found`
@@ -800,7 +818,7 @@ export async function handler(event, context) {
     // Unsupported method
     return {
       statusCode: 405,
-      headers: corsHeaders,
+      headers: headers,
       body: JSON.stringify({
         error: 'Method not allowed',
         message: `Method ${method} not supported`
@@ -811,7 +829,7 @@ export async function handler(event, context) {
 
     return {
       statusCode: 500,
-      headers: corsHeaders,
+      headers: headers,
       body: JSON.stringify({
         error: 'Request failed',
         message: error.message,
