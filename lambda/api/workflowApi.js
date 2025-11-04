@@ -21,13 +21,10 @@ export async function handler(event, context) {
   const requestId = context.requestId || randomUUID();
   setLogContext(requestId);
 
-  // CORS headers - allow all origins
+  // Lambda Function URLs handle CORS automatically, so we don't need to set headers
+  // But we'll set minimal headers for compatibility
   const corsHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-    'Access-Control-Max-Age': '86400'
+    'Content-Type': 'application/json'
   };
 
   const method = event.requestContext?.http?.method;
