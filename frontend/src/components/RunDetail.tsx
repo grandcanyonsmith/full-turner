@@ -200,30 +200,40 @@ export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
             <div className="info-item">
               <div className="info-label">Agent Cost</div>
               <div className="info-value">
-                ${(run.cost?.agent?.cost || run.cost?.agent || 0).toFixed(4)}
+                ${(run.cost?.agent?.cost !== undefined 
+                  ? run.cost.agent.cost 
+                  : (typeof run.cost?.agent === 'number' ? run.cost.agent : 0) || 0
+                ).toFixed(4)}
               </div>
             </div>
             <div className="info-item">
               <div className="info-label">Image Cost</div>
               <div className="info-value">
-                ${(run.cost?.images?.cost || run.cost?.image || 0).toFixed(4)}
+                ${(run.cost?.images?.cost !== undefined
+                  ? run.cost.images.cost
+                  : (typeof run.cost?.image === 'number' ? run.cost.image : 0) || 0
+                ).toFixed(4)}
               </div>
             </div>
-            {run.cost?.agent?.tokens?.input && (
-              <div className="info-item">
-                <div className="info-label">Input Tokens</div>
-                <div className="info-value">
-                  {run.cost.agent.tokens.input.toLocaleString()}
-                </div>
-              </div>
-            )}
-            {run.cost?.agent?.tokens?.output && (
-              <div className="info-item">
-                <div className="info-label">Output Tokens</div>
-                <div className="info-value">
-                  {run.cost.agent.tokens.output.toLocaleString()}
-                </div>
-              </div>
+            {(run.cost?.agent?.tokens?.input || run.cost?.agent?.tokens?.output) && (
+              <>
+                {run.cost?.agent?.tokens?.input && (
+                  <div className="info-item">
+                    <div className="info-label">Input Tokens</div>
+                    <div className="info-value">
+                      {run.cost.agent.tokens.input.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {run.cost?.agent?.tokens?.output && (
+                  <div className="info-item">
+                    <div className="info-label">Output Tokens</div>
+                    <div className="info-value">
+                      {run.cost.agent.tokens.output.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             {(run.cost?.images?.imagesGenerated || 0) > 0 && (
               <div className="info-item">

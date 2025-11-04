@@ -45,7 +45,11 @@ export default function RunsList({ runs, onViewRun, onRefresh, onCreateNew }: Ru
             runs.map((run) => {
               const statusClass = `status-${run.status || 'pending'}`;
               const statusText = (run.status || 'pending').charAt(0).toUpperCase() + (run.status || 'pending').slice(1);
-              const cost = run.cost?.total || run.cost?.agent?.cost || 0;
+              const cost = run.cost?.total !== undefined 
+                ? run.cost.total 
+                : (run.cost?.agent?.cost !== undefined
+                    ? run.cost.agent.cost
+                    : (typeof run.cost?.agent === 'number' ? run.cost.agent : 0)) || 0;
               const timestamp = run.timestamp ? new Date(run.timestamp).toLocaleString() : 'N/A';
 
               return (
