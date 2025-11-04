@@ -4,7 +4,7 @@
  */
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { config } from '../config/index.js';
 import { randomUUID } from 'crypto';
 
@@ -615,5 +615,61 @@ export async function listFunnelTemplates(status = null, limit = 100) {
 
   const result = await docClient.send(new ScanCommand(params));
   return result.Items || [];
+}
+
+/**
+ * Delete a brand guide
+ * @param {string} brandGuideId - Brand guide ID
+ * @returns {Promise<boolean>} - True if deleted, false if not found
+ */
+export async function deleteBrandGuide(brandGuideId) {
+  if (LOCAL_TEST) {
+    if (localDb.brandGuides[brandGuideId]) {
+      delete localDb.brandGuides[brandGuideId];
+      return true;
+    }
+    return false;
+  }
+
+  try {
+    await docClient.send(new DeleteCommand({
+      TableName: TABLES.BRAND_GUIDES,
+      Key: { brandGuideId }
+    }));
+    return true;
+  } catch (error) {
+    if (error.name === 'ResourceNotFoundException') {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Delete a funnel template
+ * @param {string} funnelTemplateId - Funnel template ID
+ * @returns {Promise<boolean>} - True if deleted, false if not found
+ */
+export async function deleteFunnelTemplate(funnelTemplateId) {
+  if (LOCAL_TEST) {
+    if (localDb.funnelTemplates[funnelTemplateId]) {
+      delete localDb.funnelTemplates[funnelTemplateId];
+      return true;
+    }
+    return false;
+  }
+
+  try {
+    await docClient.send(new DeleteCommand({
+      TableName: TABLES.FUNNEL_TEMPLATES,
+      Key: { funnelTemplateId }
+    }));
+    return true;
+  } catch (error) {
+    if (error.name === 'ResourceNotFoundException') {
+      return false;
+    }
+    throw error;
+  }
 }
 

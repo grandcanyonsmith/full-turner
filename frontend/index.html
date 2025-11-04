@@ -11,6 +11,9 @@
         <header>
             <h1>Full Turner - Runs Dashboard</h1>
             <p class="subtitle">View all processing runs and their outputs</p>
+            <div class="header-actions">
+                <button id="manageTemplatesBtn" class="btn btn-secondary">Manage Templates & Guides</button>
+            </div>
         </header>
 
         <div class="loading" id="loading">
@@ -146,6 +149,118 @@
                 </div>
                 <div class="modal-body">
                     <div id="previewContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Modal -->
+        <div class="management-modal" id="managementModal" style="display: none;">
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h2>Manage Templates & Guides</h2>
+                    <button id="closeManagementBtn" class="btn btn-secondary">Close</button>
+                </div>
+                <div class="modal-body">
+                    <div class="management-tabs">
+                        <button class="tab-btn active" data-tab="funnel-templates">Funnel Templates</button>
+                        <button class="tab-btn" data-tab="brand-guides">Brand Guides</button>
+                    </div>
+
+                    <!-- Funnel Templates Management -->
+                    <div class="management-content" id="funnelTemplatesManagement" style="display: block;">
+                        <div class="management-header">
+                            <h3>Funnel Templates</h3>
+                            <button id="createFunnelTemplateBtn" class="btn btn-primary">Create New Template</button>
+                        </div>
+                        <div class="items-list" id="funnelTemplatesList"></div>
+                    </div>
+
+                    <!-- Brand Guides Management -->
+                    <div class="management-content" id="brandGuidesManagement" style="display: none;">
+                        <div class="management-header">
+                            <h3>Brand Guides</h3>
+                            <button id="createBrandGuideBtn" class="btn btn-primary">Create New Guide</button>
+                        </div>
+                        <div class="items-list" id="brandGuidesList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Funnel Template Modal -->
+        <div class="edit-modal" id="editFunnelTemplateModal" style="display: none;">
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h2 id="editFunnelTemplateTitle">Edit Funnel Template</h2>
+                    <button id="closeEditFunnelTemplateBtn" class="btn btn-secondary">Close</button>
+                </div>
+                <div class="modal-body">
+                    <form id="editFunnelTemplateForm">
+                        <div class="form-group">
+                            <label for="funnelTemplateName">Name *</label>
+                            <input type="text" id="funnelTemplateName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="funnelTemplateDescription">Description</label>
+                            <textarea id="funnelTemplateDescription" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="funnelTemplateJson">Funnel JSON *</label>
+                            <textarea id="funnelTemplateJson" name="funnelJson" rows="20" style="font-family: monospace; font-size: 12px;" required></textarea>
+                            <small>Enter a valid JSON array of funnel elements</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="funnelTemplateStatus">Status</label>
+                            <select id="funnelTemplateStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="button" id="cancelEditFunnelTemplateBtn" class="btn btn-secondary">Cancel</button>
+                            <button type="button" id="deleteFunnelTemplateBtn" class="btn btn-danger" style="margin-left: auto;">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Brand Guide Modal -->
+        <div class="edit-modal" id="editBrandGuideModal" style="display: none;">
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h2 id="editBrandGuideTitle">Edit Brand Guide</h2>
+                    <button id="closeEditBrandGuideBtn" class="btn btn-secondary">Close</button>
+                </div>
+                <div class="modal-body">
+                    <form id="editBrandGuideForm">
+                        <div class="form-group">
+                            <label for="brandGuideName">Name *</label>
+                            <input type="text" id="brandGuideName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="brandGuideDescription">Description</label>
+                            <textarea id="brandGuideDescription" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="brandGuideContent">Content *</label>
+                            <textarea id="brandGuideContent" name="content" rows="20" style="font-family: monospace; font-size: 12px;" required></textarea>
+                            <small>Enter the brand guide content (text format)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="brandGuideStatus">Status</label>
+                            <select id="brandGuideStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="button" id="cancelEditBrandGuideBtn" class="btn btn-secondary">Cancel</button>
+                            <button type="button" id="deleteBrandGuideBtn" class="btn btn-danger" style="margin-left: auto;">Delete</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
