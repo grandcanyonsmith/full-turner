@@ -8,7 +8,9 @@ import { listAllRuns, getRun, createRun, updateRunStatus } from '../../src/servi
 import { listTemplates, getTemplate } from '../../src/services/database.js';
 import { listBrandGuides, getBrandGuide, saveBrandGuide, deleteBrandGuide } from '../../src/services/database.js';
 import { listFunnelTemplates, getFunnelTemplate, saveFunnelTemplate, deleteFunnelTemplate } from '../../src/services/database.js';
+import { getOpenAIKeyFromAWS } from '../../src/services/aws.js';
 import { logger, setLogContext } from '../../src/utils/logger.js';
+import { setDefaultOpenAIKey } from '@openai/agents';
 import { randomUUID } from 'crypto';
 
 /**
@@ -437,6 +439,11 @@ export async function handler(event, context) {
           status: 'processing'
         });
 
+        // Get API key from AWS Secrets Manager
+        logger.info('Fetching OpenAI API key from AWS');
+        const apiKey = await getOpenAIKeyFromAWS();
+        setDefaultOpenAIKey(apiKey);
+
         // Prepare Step Functions input
         const stepFunctionsInput = {
           runId: run.runId,
@@ -449,8 +456,16 @@ export async function handler(event, context) {
             brandGuideId: body.brandGuideId
           },
           // Pass brand guide and template funnel directly to avoid DB lookup
-          brandGuide: brandGuide.brandGuideJson || brandGuide.content,
-          templateFunnel: funnelTemplate.funnelJson,
+          // Stringify brandGuideJson if it's an object, otherwise use content string
+          brandGuide: brandGuide.brandGuideJson 
+            ? (typeof brandGuide.brandGuideJson === 'string' 
+                ? brandGuide.brandGuideJson 
+                : JSON.stringify(brandGuide.brandGuideJson))
+            : brandGuide.content,
+          templateFunnel: typeof funnelTemplate.funnelJson === 'string'
+            ? funnelTemplate.funnelJson
+            : JSON.stringify(funnelTemplate.funnelJson),
+          apiKey, // Include API key in workflow input
           initiatedBy: 'api',
           source: 'workflow-api'
         };
