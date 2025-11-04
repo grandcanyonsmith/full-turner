@@ -157,6 +157,53 @@ function extractBrandInfo(brandGuide) {
     bodyFont: null,
     visualStyle: []
   };
+
+  // Check if brandGuide is JSON object (new format)
+  if (brandGuide && typeof brandGuide === 'object' && !Array.isArray(brandGuide)) {
+    const styleGuide = brandGuide.brandStyleGuide;
+    
+    if (styleGuide) {
+      // Extract colors from JSON
+      if (styleGuide.colors) {
+        if (styleGuide.colors.primary) {
+          brandInfo.primaryColor = styleGuide.colors.primary.name || null;
+          brandInfo.primaryColorHex = styleGuide.colors.primary.hex || null;
+        }
+        if (styleGuide.colors.secondary) {
+          brandInfo.secondaryColor = styleGuide.colors.secondary.name || null;
+          brandInfo.secondaryColorHex = styleGuide.colors.secondary.hex || null;
+        }
+        if (styleGuide.colors.accent) {
+          brandInfo.accentColor = styleGuide.colors.accent.name || null;
+          brandInfo.accentColorHex = styleGuide.colors.accent.hex || null;
+        }
+      }
+      
+      // Extract typography from JSON
+      if (styleGuide.typography) {
+        if (styleGuide.typography.headings) {
+          brandInfo.headingFont = styleGuide.typography.headings.font || null;
+        }
+        if (styleGuide.typography.body) {
+          brandInfo.bodyFont = styleGuide.typography.body.font || null;
+        }
+      }
+      
+      // Extract visual style from JSON
+      if (styleGuide.visualStyle && styleGuide.visualStyle.elements) {
+        brandInfo.visualStyle = styleGuide.visualStyle.elements || [];
+      } else if (styleGuide.visualStyle && styleGuide.visualStyle.approach) {
+        brandInfo.visualStyle = [styleGuide.visualStyle.approach];
+      }
+    }
+    
+    return brandInfo;
+  }
+  
+  // Fallback to text parsing (old format)
+  if (typeof brandGuide !== 'string') {
+    return brandInfo;
+  }
   
   // Extract colors from Color Palette section
   // Match Primary color

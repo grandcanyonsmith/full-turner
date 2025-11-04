@@ -38,7 +38,12 @@ export async function handler(event, context) {
       logger.info('Fetching brand guide from database', { brandGuideId: event.input.brandGuideId });
       const brandGuideRecord = await getBrandGuide(event.input.brandGuideId);
       if (brandGuideRecord) {
-        brandGuide = brandGuideRecord.content;
+        // Use brandGuideJson if available, otherwise fall back to content
+        if (brandGuideRecord.brandGuideJson) {
+          brandGuide = brandGuideRecord.brandGuideJson;
+        } else {
+          brandGuide = brandGuideRecord.content;
+        }
       }
     }
 

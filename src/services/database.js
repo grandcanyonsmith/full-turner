@@ -465,6 +465,7 @@ export async function saveBrandGuide(brandGuideData) {
     name: brandGuideData.name || 'Unnamed Brand Guide',
     description: brandGuideData.description || '',
     content: brandGuideData.content || '',
+    brandGuideJson: brandGuideData.brandGuideJson || null,
     status: brandGuideData.status || 'active',
     createdAt: brandGuideData.createdAt || now,
     updatedAt: now,
