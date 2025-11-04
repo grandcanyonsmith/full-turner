@@ -554,8 +554,6 @@ export async function handler(event, context) {
 
       // Get API key from AWS
       logger.info('Fetching OpenAI API key from AWS');
-      const { getOpenAIKeyFromAWS } = await import('../../src/services/aws.js');
-      const { setDefaultOpenAIKey } = await import('@openai/agents');
       const { runWorkflow } = await import('../../src/agent/workflow.js');
       
       const apiKey = await getOpenAIKeyFromAWS();
