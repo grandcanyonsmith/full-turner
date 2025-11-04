@@ -253,24 +253,41 @@ export async function updateRunStatus(runId, timestamp, updates) {
     return newRun;
   }
 
-  await docClient.send(new UpdateCommand({
-    TableName: TABLES.PROCESSING_RUNS,
-    Key: {
-      runId,
-      timestamp
-    },
-    UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-    ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
-    ExpressionAttributeValues: expressionAttributeValues,
-    ReturnValues: 'ALL_NEW'
-  }));
+  try {
+    const updateResult = await docClient.send(new UpdateCommand({
+      TableName: TABLES.PROCESSING_RUNS,
+      Key: {
+        runId,
+        timestamp
+      },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW'
+    }));
 
-  const result = await docClient.send(new GetCommand({
-    TableName: TABLES.PROCESSING_RUNS,
-    Key: { runId, timestamp }
-  }));
+    // If ReturnValues is 'ALL_NEW', the updated item is returned
+    if (updateResult.Attributes) {
+      return updateResult.Attributes;
+    }
 
-  return result.Item;
+    // Fallback: try to get the item
+    const result = await docClient.send(new GetCommand({
+      TableName: TABLES.PROCESSING_RUNS,
+      Key: { runId, timestamp }
+    }));
+
+    return result.Item || null;
+  } catch (error) {
+    // Handle ResourceNotFoundException - run might not exist yet or table doesn't exist
+    if (error.name === 'ResourceNotFoundException') {
+      console.warn(`Run ${runId} not found in database. This may happen if the run was not created before status update or the table doesn't exist.`);
+      // Return null instead of throwing - allows workflow to continue
+      return null;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 /**
