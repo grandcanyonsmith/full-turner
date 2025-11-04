@@ -6,8 +6,8 @@
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { listAllRuns, getRun, createRun, updateRunStatus } from '../src/services/database.js';
 import { listTemplates, getTemplate } from '../src/services/database.js';
-import { listBrandGuides, getBrandGuide } from '../src/services/database.js';
-import { listFunnelTemplates, getFunnelTemplate } from '../src/services/database.js';
+import { listBrandGuides, getBrandGuide, saveBrandGuide, deleteBrandGuide } from '../src/services/database.js';
+import { listFunnelTemplates, getFunnelTemplate, saveFunnelTemplate, deleteFunnelTemplate } from '../src/services/database.js';
 import { logger, setLogContext } from '../src/utils/logger.js';
 import { randomUUID } from 'crypto';
 
@@ -147,6 +147,82 @@ export async function handler(event, context) {
         };
       }
 
+      // GET /funnel-templates/{id} - Get single funnel template
+      if (path.startsWith('/funnel-templates/')) {
+        const funnelTemplateId = path.split('/funnel-templates/')[1]?.split('?')[0];
+        if (!funnelTemplateId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing funnelTemplateId',
+              message: 'Funnel template ID is required'
+            })
+          };
+        }
+
+        logger.info('Fetching funnel template', { funnelTemplateId });
+        const template = await getFunnelTemplate(funnelTemplateId);
+
+        if (!template) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              error: 'Funnel template not found',
+              message: `Funnel template with ID ${funnelTemplateId} not found`
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            funnelTemplate: template
+          })
+        };
+      }
+
+      // GET /brand-guides/{id} - Get single brand guide
+      if (path.startsWith('/brand-guides/')) {
+        const brandGuideId = path.split('/brand-guides/')[1]?.split('?')[0];
+        if (!brandGuideId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing brandGuideId',
+              message: 'Brand guide ID is required'
+            })
+          };
+        }
+
+        logger.info('Fetching brand guide', { brandGuideId });
+        const guide = await getBrandGuide(brandGuideId);
+
+        if (!guide) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              error: 'Brand guide not found',
+              message: `Brand guide with ID ${brandGuideId} not found`
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            brandGuide: guide
+          })
+        };
+      }
+
       // Unknown GET endpoint
       return {
         statusCode: 404,
@@ -171,6 +247,94 @@ export async function handler(event, context) {
           body: JSON.stringify({
             error: 'Invalid JSON in request body',
             message: e.message
+          })
+        };
+      }
+
+      // POST /funnel-templates - Create a new funnel template
+      if (path === '/funnel-templates') {
+        if (!body.name) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing required field',
+              message: 'name is required'
+            })
+          };
+        }
+
+        if (!body.funnelJson) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing required field',
+              message: 'funnelJson is required'
+            })
+          };
+        }
+
+        logger.info('Creating funnel template', { name: body.name });
+        const template = await saveFunnelTemplate({
+          funnelTemplateId: body.funnelTemplateId,
+          name: body.name,
+          description: body.description || '',
+          funnelJson: body.funnelJson,
+          status: body.status || 'active',
+          metadata: body.metadata || {}
+        });
+
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            funnelTemplate: template
+          })
+        };
+      }
+
+      // POST /brand-guides - Create a new brand guide
+      if (path === '/brand-guides') {
+        if (!body.name) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing required field',
+              message: 'name is required'
+            })
+          };
+        }
+
+        if (!body.content) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing required field',
+              message: 'content is required'
+            })
+          };
+        }
+
+        logger.info('Creating brand guide', { name: body.name });
+        const guide = await saveBrandGuide({
+          brandGuideId: body.brandGuideId,
+          name: body.name,
+          description: body.description || '',
+          content: body.content,
+          status: body.status || 'active',
+          metadata: body.metadata || {}
+        });
+
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            brandGuide: guide
           })
         };
       }
@@ -384,6 +548,219 @@ export async function handler(event, context) {
           output: result.output_text,
           image_processing_stats: result.image_processing_stats || {},
           timestamp: new Date().toISOString()
+        })
+      };
+    }
+
+    // Handle PUT requests for updates
+    if (method === 'PUT') {
+      // Parse request body
+      let body;
+      try {
+        body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      } catch (e) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Invalid JSON in request body',
+            message: e.message
+          })
+        };
+      }
+
+      // PUT /funnel-templates/{id} - Update funnel template
+      if (path.startsWith('/funnel-templates/')) {
+        const funnelTemplateId = path.split('/funnel-templates/')[1]?.split('?')[0];
+        if (!funnelTemplateId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing funnelTemplateId',
+              message: 'Funnel template ID is required'
+            })
+          };
+        }
+
+        // Check if template exists
+        const existing = await getFunnelTemplate(funnelTemplateId);
+        if (!existing) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              error: 'Funnel template not found',
+              message: `Funnel template with ID ${funnelTemplateId} not found`
+            })
+          };
+        }
+
+        logger.info('Updating funnel template', { funnelTemplateId });
+        const template = await saveFunnelTemplate({
+          funnelTemplateId,
+          name: body.name !== undefined ? body.name : existing.name,
+          description: body.description !== undefined ? body.description : existing.description,
+          funnelJson: body.funnelJson !== undefined ? body.funnelJson : existing.funnelJson,
+          status: body.status !== undefined ? body.status : existing.status,
+          createdAt: existing.createdAt, // Preserve original creation date
+          metadata: body.metadata !== undefined ? body.metadata : existing.metadata
+        });
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            funnelTemplate: template
+          })
+        };
+      }
+
+      // PUT /brand-guides/{id} - Update brand guide
+      if (path.startsWith('/brand-guides/')) {
+        const brandGuideId = path.split('/brand-guides/')[1]?.split('?')[0];
+        if (!brandGuideId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing brandGuideId',
+              message: 'Brand guide ID is required'
+            })
+          };
+        }
+
+        // Check if guide exists
+        const existing = await getBrandGuide(brandGuideId);
+        if (!existing) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              error: 'Brand guide not found',
+              message: `Brand guide with ID ${brandGuideId} not found`
+            })
+          };
+        }
+
+        logger.info('Updating brand guide', { brandGuideId });
+        const guide = await saveBrandGuide({
+          brandGuideId,
+          name: body.name !== undefined ? body.name : existing.name,
+          description: body.description !== undefined ? body.description : existing.description,
+          content: body.content !== undefined ? body.content : existing.content,
+          status: body.status !== undefined ? body.status : existing.status,
+          createdAt: existing.createdAt, // Preserve original creation date
+          metadata: body.metadata !== undefined ? body.metadata : existing.metadata
+        });
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            brandGuide: guide
+          })
+        };
+      }
+
+      // Unknown PUT endpoint
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({
+          error: 'Not found',
+          message: `Endpoint ${path} not found`
+        })
+      };
+    }
+
+    // Handle DELETE requests
+    if (method === 'DELETE') {
+      // DELETE /funnel-templates/{id}
+      if (path.startsWith('/funnel-templates/')) {
+        const funnelTemplateId = path.split('/funnel-templates/')[1]?.split('?')[0];
+        if (!funnelTemplateId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing funnelTemplateId',
+              message: 'Funnel template ID is required'
+            })
+          };
+        }
+
+        logger.info('Deleting funnel template', { funnelTemplateId });
+        const deleted = await deleteFunnelTemplate(funnelTemplateId);
+
+        if (!deleted) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              error: 'Funnel template not found',
+              message: `Funnel template with ID ${funnelTemplateId} not found`
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: 'Funnel template deleted successfully'
+          })
+        };
+      }
+
+      // DELETE /brand-guides/{id}
+      if (path.startsWith('/brand-guides/')) {
+        const brandGuideId = path.split('/brand-guides/')[1]?.split('?')[0];
+        if (!brandGuideId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'Missing brandGuideId',
+              message: 'Brand guide ID is required'
+            })
+          };
+        }
+
+        logger.info('Deleting brand guide', { brandGuideId });
+        const deleted = await deleteBrandGuide(brandGuideId);
+
+        if (!deleted) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              error: 'Brand guide not found',
+              message: `Brand guide with ID ${brandGuideId} not found`
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: 'Brand guide deleted successfully'
+          })
+        };
+      }
+
+      // Unknown DELETE endpoint
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({
+          error: 'Not found',
+          message: `Endpoint ${path} not found`
         })
       };
     }

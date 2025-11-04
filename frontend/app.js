@@ -107,6 +107,36 @@ function setupEventListeners() {
             switchTab(tabType);
         });
     });
+    
+    // Management modal
+    document.getElementById('manageTemplatesBtn').addEventListener('click', showManagementModal);
+    document.getElementById('closeManagementBtn').addEventListener('click', hideManagementModal);
+    
+    // Management tabs
+    document.querySelectorAll('.management-tabs .tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabType = e.target.dataset.tab;
+            switchManagementTab(tabType);
+        });
+    });
+    
+    // Create buttons
+    document.getElementById('createFunnelTemplateBtn').addEventListener('click', () => showEditFunnelTemplateModal());
+    document.getElementById('createBrandGuideBtn').addEventListener('click', () => showEditBrandGuideModal());
+    
+    // Edit form handlers
+    document.getElementById('editFunnelTemplateForm').addEventListener('submit', handleSaveFunnelTemplate);
+    document.getElementById('editBrandGuideForm').addEventListener('submit', handleSaveBrandGuide);
+    
+    // Close edit modals
+    document.getElementById('closeEditFunnelTemplateBtn').addEventListener('click', hideEditFunnelTemplateModal);
+    document.getElementById('cancelEditFunnelTemplateBtn').addEventListener('click', hideEditFunnelTemplateModal);
+    document.getElementById('closeEditBrandGuideBtn').addEventListener('click', hideEditBrandGuideModal);
+    document.getElementById('cancelEditBrandGuideBtn').addEventListener('click', hideEditBrandGuideModal);
+    
+    // Delete handlers
+    document.getElementById('deleteFunnelTemplateBtn').addEventListener('click', handleDeleteFunnelTemplate);
+    document.getElementById('deleteBrandGuideBtn').addEventListener('click', handleDeleteBrandGuide);
 }
 
 /**
@@ -863,6 +893,372 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Management modal functions
+let currentEditingTemplateId = null;
+let currentEditingBrandGuideId = null;
+
+function showManagementModal() {
+    document.getElementById('managementModal').style.display = 'flex';
+    loadManagementLists();
+}
+
+function hideManagementModal() {
+    document.getElementById('managementModal').style.display = 'none';
+}
+
+function switchManagementTab(tabType) {
+    document.querySelectorAll('.management-tabs .tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabType) {
+            btn.classList.add('active');
+        }
+    });
+    
+    document.getElementById('funnelTemplatesManagement').style.display = 
+        tabType === 'funnel-templates' ? 'block' : 'none';
+    document.getElementById('brandGuidesManagement').style.display = 
+        tabType === 'brand-guides' ? 'block' : 'none';
+}
+
+async function loadManagementLists() {
+    await Promise.all([
+        loadFunnelTemplatesForManagement(),
+        loadBrandGuidesForManagement()
+    ]);
+}
+
+async function loadFunnelTemplatesForManagement() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/funnel-templates`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayFunnelTemplatesList(data.funnelTemplates || []);
+        }
+    } catch (error) {
+        console.error('Error loading funnel templates:', error);
+        showError('Failed to load funnel templates: ' + error.message);
+    }
+}
+
+async function loadBrandGuidesForManagement() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/brand-guides`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayBrandGuidesList(data.brandGuides || []);
+        }
+    } catch (error) {
+        console.error('Error loading brand guides:', error);
+        showError('Failed to load brand guides: ' + error.message);
+    }
+}
+
+function displayFunnelTemplatesList(templates) {
+    const container = document.getElementById('funnelTemplatesList');
+    container.innerHTML = '';
+    
+    if (templates.length === 0) {
+        container.innerHTML = '<p>No funnel templates found. Create one to get started.</p>';
+        return;
+    }
+    
+    templates.forEach(template => {
+        const item = document.createElement('div');
+        item.className = 'item-card';
+        item.innerHTML = `
+            <div class="item-header">
+                <h4>${escapeHtml(template.name)}</h4>
+                <span class="status-badge status-${template.status || 'active'}">${(template.status || 'active').charAt(0).toUpperCase() + (template.status || 'active').slice(1)}</span>
+            </div>
+            <p class="item-description">${escapeHtml(template.description || 'No description')}</p>
+            <div class="item-meta">
+                <span>ID: ${escapeHtml(template.funnelTemplateId)}</span>
+                <span>Elements: ${template.funnelJson?.length || 0}</span>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-primary btn-small" onclick="editFunnelTemplate('${template.funnelTemplateId}')">Edit</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function displayBrandGuidesList(guides) {
+    const container = document.getElementById('brandGuidesList');
+    container.innerHTML = '';
+    
+    if (guides.length === 0) {
+        container.innerHTML = '<p>No brand guides found. Create one to get started.</p>';
+        return;
+    }
+    
+    guides.forEach(guide => {
+        const item = document.createElement('div');
+        item.className = 'item-card';
+        const contentPreview = guide.content ? guide.content.substring(0, 100) + '...' : 'No content';
+        item.innerHTML = `
+            <div class="item-header">
+                <h4>${escapeHtml(guide.name)}</h4>
+                <span class="status-badge status-${guide.status || 'active'}">${(guide.status || 'active').charAt(0).toUpperCase() + (guide.status || 'active').slice(1)}</span>
+            </div>
+            <p class="item-description">${escapeHtml(guide.description || 'No description')}</p>
+            <div class="item-meta">
+                <span>ID: ${escapeHtml(guide.brandGuideId)}</span>
+                <span>Content length: ${guide.content?.length || 0} chars</span>
+            </div>
+            <div class="item-preview">${escapeHtml(contentPreview)}</div>
+            <div class="item-actions">
+                <button class="btn btn-primary btn-small" onclick="editBrandGuide('${guide.brandGuideId}')">Edit</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+async function editFunnelTemplate(templateId) {
+    currentEditingTemplateId = templateId;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/funnel-templates/${templateId}`);
+        const data = await response.json();
+        
+        if (data.success && data.funnelTemplate) {
+            const template = data.funnelTemplate;
+            document.getElementById('editFunnelTemplateTitle').textContent = 'Edit Funnel Template';
+            document.getElementById('funnelTemplateName').value = template.name || '';
+            document.getElementById('funnelTemplateDescription').value = template.description || '';
+            document.getElementById('funnelTemplateJson').value = JSON.stringify(template.funnelJson || [], null, 2);
+            document.getElementById('funnelTemplateStatus').value = template.status || 'active';
+            document.getElementById('deleteFunnelTemplateBtn').style.display = 'block';
+            showEditFunnelTemplateModal();
+        } else {
+            showError('Failed to load funnel template');
+        }
+    } catch (error) {
+        console.error('Error loading funnel template:', error);
+        showError('Failed to load funnel template: ' + error.message);
+    }
+}
+
+function showEditFunnelTemplateModal() {
+    if (!currentEditingTemplateId) {
+        // Creating new
+        document.getElementById('editFunnelTemplateTitle').textContent = 'Create Funnel Template';
+        document.getElementById('editFunnelTemplateForm').reset();
+        document.getElementById('funnelTemplateJson').value = '[]';
+        document.getElementById('deleteFunnelTemplateBtn').style.display = 'none';
+    }
+    document.getElementById('editFunnelTemplateModal').style.display = 'flex';
+}
+
+function hideEditFunnelTemplateModal() {
+    document.getElementById('editFunnelTemplateModal').style.display = 'none';
+    currentEditingTemplateId = null;
+}
+
+async function handleSaveFunnelTemplate(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    let funnelJson;
+    
+    try {
+        funnelJson = JSON.parse(document.getElementById('funnelTemplateJson').value);
+    } catch (error) {
+        showError('Invalid JSON: ' + error.message);
+        return;
+    }
+    
+    const data = {
+        name: formData.get('name'),
+        description: formData.get('description') || '',
+        funnelJson: funnelJson,
+        status: formData.get('status') || 'active'
+    };
+    
+    if (currentEditingTemplateId) {
+        // Update existing
+        data.funnelTemplateId = currentEditingTemplateId;
+    }
+    
+    try {
+        const url = currentEditingTemplateId 
+            ? `${API_BASE_URL}/funnel-templates/${currentEditingTemplateId}`
+            : `${API_BASE_URL}/funnel-templates`;
+        
+        const method = currentEditingTemplateId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showSuccess(currentEditingTemplateId ? 'Funnel template updated successfully' : 'Funnel template created successfully');
+            hideEditFunnelTemplateModal();
+            await loadManagementLists();
+            await loadFunnelTemplates(); // Refresh dropdown
+        } else {
+            showError(result.message || 'Failed to save funnel template');
+        }
+    } catch (error) {
+        console.error('Error saving funnel template:', error);
+        showError('Failed to save funnel template: ' + error.message);
+    }
+}
+
+async function handleDeleteFunnelTemplate() {
+    if (!currentEditingTemplateId) return;
+    
+    if (!confirm(`Are you sure you want to delete this funnel template? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/funnel-templates/${currentEditingTemplateId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showSuccess('Funnel template deleted successfully');
+            hideEditFunnelTemplateModal();
+            await loadManagementLists();
+            await loadFunnelTemplates(); // Refresh dropdown
+        } else {
+            showError(result.message || 'Failed to delete funnel template');
+        }
+    } catch (error) {
+        console.error('Error deleting funnel template:', error);
+        showError('Failed to delete funnel template: ' + error.message);
+    }
+}
+
+async function editBrandGuide(guideId) {
+    currentEditingBrandGuideId = guideId;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/brand-guides/${guideId}`);
+        const data = await response.json();
+        
+        if (data.success && data.brandGuide) {
+            const guide = data.brandGuide;
+            document.getElementById('editBrandGuideTitle').textContent = 'Edit Brand Guide';
+            document.getElementById('brandGuideName').value = guide.name || '';
+            document.getElementById('brandGuideDescription').value = guide.description || '';
+            document.getElementById('brandGuideContent').value = guide.content || '';
+            document.getElementById('brandGuideStatus').value = guide.status || 'active';
+            document.getElementById('deleteBrandGuideBtn').style.display = 'block';
+            showEditBrandGuideModal();
+        } else {
+            showError('Failed to load brand guide');
+        }
+    } catch (error) {
+        console.error('Error loading brand guide:', error);
+        showError('Failed to load brand guide: ' + error.message);
+    }
+}
+
+function showEditBrandGuideModal() {
+    if (!currentEditingBrandGuideId) {
+        // Creating new
+        document.getElementById('editBrandGuideTitle').textContent = 'Create Brand Guide';
+        document.getElementById('editBrandGuideForm').reset();
+        document.getElementById('brandGuideContent').value = '';
+        document.getElementById('deleteBrandGuideBtn').style.display = 'none';
+    }
+    document.getElementById('editBrandGuideModal').style.display = 'flex';
+}
+
+function hideEditBrandGuideModal() {
+    document.getElementById('editBrandGuideModal').style.display = 'none';
+    currentEditingBrandGuideId = null;
+}
+
+async function handleSaveBrandGuide(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    const data = {
+        name: formData.get('name'),
+        description: formData.get('description') || '',
+        content: formData.get('content'),
+        status: formData.get('status') || 'active'
+    };
+    
+    if (currentEditingBrandGuideId) {
+        // Update existing
+        data.brandGuideId = currentEditingBrandGuideId;
+    }
+    
+    try {
+        const url = currentEditingBrandGuideId 
+            ? `${API_BASE_URL}/brand-guides/${currentEditingBrandGuideId}`
+            : `${API_BASE_URL}/brand-guides`;
+        
+        const method = currentEditingBrandGuideId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showSuccess(currentEditingBrandGuideId ? 'Brand guide updated successfully' : 'Brand guide created successfully');
+            hideEditBrandGuideModal();
+            await loadManagementLists();
+            await loadBrandGuides(); // Refresh dropdown
+        } else {
+            showError(result.message || 'Failed to save brand guide');
+        }
+    } catch (error) {
+        console.error('Error saving brand guide:', error);
+        showError('Failed to save brand guide: ' + error.message);
+    }
+}
+
+async function handleDeleteBrandGuide() {
+    if (!currentEditingBrandGuideId) return;
+    
+    if (!confirm(`Are you sure you want to delete this brand guide? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/brand-guides/${currentEditingBrandGuideId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showSuccess('Brand guide deleted successfully');
+            hideEditBrandGuideModal();
+            await loadManagementLists();
+            await loadBrandGuides(); // Refresh dropdown
+        } else {
+            showError(result.message || 'Failed to delete brand guide');
+        }
+    } catch (error) {
+        console.error('Error deleting brand guide:', error);
+        showError('Failed to delete brand guide: ' + error.message);
+    }
+}
+
+// Make functions globally accessible for onclick handlers
+window.editFunnelTemplate = editFunnelTemplate;
+window.editBrandGuide = editBrandGuide;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', init);
