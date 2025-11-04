@@ -31,6 +31,9 @@ export default function EditBrandGuideModal({
   const [status, setStatus] = useState<'active' | 'inactive'>('active');
   const [loading, setLoading] = useState(false);
   const [useJson, setUseJson] = useState(true);
+  const [jsonInputMode, setJsonInputMode] = useState<'structured' | 'raw'>('structured');
+  const [rawJsonText, setRawJsonText] = useState('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   useEffect(() => {
     if (guideId) {
@@ -42,6 +45,8 @@ export default function EditBrandGuideModal({
         setBrandGuideJson(guideData.brandGuideJson || {});
         setStatus(guideData.status || 'active');
         setUseJson(!!guideData.brandGuideJson || Object.keys(guideData.brandGuideJson || {}).length > 0);
+        setRawJsonText(guideData.brandGuideJson ? JSON.stringify(guideData.brandGuideJson, null, 2) : '');
+        setJsonError(null);
         setLoading(false);
         return;
       }
@@ -58,6 +63,8 @@ export default function EditBrandGuideModal({
           setBrandGuideJson(guide.brandGuideJson || {});
           setStatus(guide.status || 'active');
           setUseJson(!!guide.brandGuideJson || Object.keys(guide.brandGuideJson || {}).length > 0);
+          setRawJsonText(guide.brandGuideJson ? JSON.stringify(guide.brandGuideJson, null, 2) : '');
+          setJsonError(null);
         })
         .catch((err) => {
           console.error('Error loading brand guide:', err);
@@ -70,8 +77,11 @@ export default function EditBrandGuideModal({
       setDescription('');
       setContent('');
       setBrandGuideJson({});
+      setRawJsonText('');
+      setJsonError(null);
       setStatus('active');
       setUseJson(true);
+      setJsonInputMode('structured');
     }
   }, [guideId, guideData]);
 
@@ -91,12 +101,52 @@ export default function EditBrandGuideModal({
     };
 
     if (useJson) {
-      saveData.brandGuideJson = brandGuideJson;
+      // If in raw JSON mode, parse it first
+      if (jsonInputMode === 'raw') {
+        try {
+          const parsed = JSON.parse(rawJsonText);
+          saveData.brandGuideJson = parsed;
+        } catch (error: any) {
+          setJsonError(error.message || 'Invalid JSON');
+          return;
+        }
+      } else {
+        saveData.brandGuideJson = brandGuideJson;
+      }
     } else {
       saveData.content = content;
     }
 
     onSave(saveData);
+  };
+
+  const handleRawJsonChange = (text: string) => {
+    setRawJsonText(text);
+    setJsonError(null);
+    // Try to parse and update structured view in real-time
+    try {
+      const parsed = JSON.parse(text);
+      setBrandGuideJson(parsed);
+    } catch {
+      // Invalid JSON, but don't show error until save
+    }
+  };
+
+  const handlePasteJson = () => {
+    // Switch to raw mode and focus the textarea
+    setJsonInputMode('raw');
+    setRawJsonText(JSON.stringify(brandGuideJson, null, 2));
+  };
+
+  const handleLoadFromRaw = () => {
+    try {
+      const parsed = JSON.parse(rawJsonText);
+      setBrandGuideJson(parsed);
+      setJsonInputMode('structured');
+      setJsonError(null);
+    } catch (error: any) {
+      setJsonError(error.message || 'Invalid JSON. Please check your syntax.');
+    }
   };
 
   if (loading) {
@@ -163,9 +213,59 @@ export default function EditBrandGuideModal({
             </div>
             {useJson ? (
               <div className="form-group">
-                <label>Brand Guide JSON *</label>
-                <BrandGuideJsonEditor value={brandGuideJson} onChange={setBrandGuideJson} />
-                <small>Edit the structured brand guide data</small>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ margin: 0 }}>Brand Guide JSON *</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {jsonInputMode === 'structured' ? (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-small"
+                        onClick={handlePasteJson}
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        Paste JSON
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-small"
+                        onClick={handleLoadFromRaw}
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        Load into Editor
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {jsonInputMode === 'structured' ? (
+                  <>
+                    <BrandGuideJsonEditor value={brandGuideJson} onChange={setBrandGuideJson} />
+                    <small>Edit the structured brand guide data, or click "Paste JSON" to paste full JSON</small>
+                  </>
+                ) : (
+                  <>
+                    <textarea
+                      value={rawJsonText}
+                      onChange={(e) => handleRawJsonChange(e.target.value)}
+                      rows={25}
+                      style={{ 
+                        fontFamily: 'monospace', 
+                        fontSize: '12px',
+                        width: '100%',
+                        padding: '8px',
+                        border: jsonError ? '2px solid #dc3545' : '1px solid #ddd',
+                        borderRadius: '4px'
+                      }}
+                      placeholder="Paste your full JSON here..."
+                    />
+                    {jsonError && (
+                      <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>
+                        Error: {jsonError}
+                      </div>
+                    )}
+                    <small>Paste your complete JSON structure here. Click "Load into Editor" to populate the structured editor, or just save to use the raw JSON.</small>
+                  </>
+                )}
               </div>
             ) : (
               <div className="form-group">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Run, FunnelElement } from '../types';
 import { parseOutput, renderFunnelHTML } from '../utils/renderer';
 import { formatDuration } from '../utils/helpers';
+import { api } from '../utils/api';
 
 interface RunDetailProps {
   run: Run;
@@ -12,6 +13,8 @@ interface RunDetailProps {
 export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
   const [activeTab, setActiveTab] = useState<'opt' | 'ty' | 'dl' | 'email'>('opt');
   const [funnelJson, setFunnelJson] = useState<FunnelElement[]>([]);
+  const [templateName, setTemplateName] = useState<string | null>(null);
+  const [brandGuideName, setBrandGuideName] = useState<string | null>(null);
 
   useEffect(() => {
     // Parse output to extract funnel_json
@@ -22,6 +25,36 @@ export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
       setFunnelJson(parsedOutput.funnel_json);
     } else {
       setFunnelJson([]);
+    }
+  }, [run]);
+
+  useEffect(() => {
+    // Fetch template name
+    const templateId = run.templateId || run.input?.funnelTemplateId;
+    if (templateId) {
+      api.getFunnelTemplate(templateId)
+        .then((data) => {
+          setTemplateName(data.funnelTemplate?.name || null);
+        })
+        .catch(() => {
+          setTemplateName(null);
+        });
+    } else {
+      setTemplateName(null);
+    }
+
+    // Fetch brand guide name
+    const brandGuideId = run.input?.brandGuideId;
+    if (brandGuideId) {
+      api.getBrandGuide(brandGuideId)
+        .then((data) => {
+          setBrandGuideName(data.brandGuide?.name || null);
+        })
+        .catch(() => {
+          setBrandGuideName(null);
+        });
+    } else {
+      setBrandGuideName(null);
     }
   }, [run]);
 
@@ -49,9 +82,37 @@ export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
               <div className="info-value">{run.runId}</div>
             </div>
             <div className="info-item">
-              <div className="info-label">Template ID</div>
-              <div className="info-value">{run.templateId || 'N/A'}</div>
+              <div className="info-label">Template</div>
+              <div className="info-value">
+                {templateName ? (
+                  <>
+                    <div>{templateName}</div>
+                    <div style={{ fontSize: '0.85em', color: '#666', marginTop: '4px' }}>
+                      ID: {run.templateId || run.input?.funnelTemplateId || 'N/A'}
+                    </div>
+                  </>
+                ) : (
+                  run.templateId || run.input?.funnelTemplateId || 'N/A'
+                )}
+              </div>
             </div>
+            {run.input?.brandGuideId && (
+              <div className="info-item">
+                <div className="info-label">Brand Guide</div>
+                <div className="info-value">
+                  {brandGuideName ? (
+                    <>
+                      <div>{brandGuideName}</div>
+                      <div style={{ fontSize: '0.85em', color: '#666', marginTop: '4px' }}>
+                        ID: {run.input.brandGuideId}
+                      </div>
+                    </>
+                  ) : (
+                    run.input.brandGuideId
+                  )}
+                </div>
+              </div>
+            )}
             <div className="info-item">
               <div className="info-label">Status</div>
               <div className="info-value">
