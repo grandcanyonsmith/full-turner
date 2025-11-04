@@ -21,14 +21,26 @@ export async function handler(event, context) {
   const requestId = context.requestId || randomUUID();
   setLogContext(requestId);
 
-  // CORS headers are handled by Lambda Function URL configuration
-  // Only set Content-Type header to avoid duplicate CORS headers
-  const headers = {
-    'Content-Type': 'application/json'
+  // CORS headers - allow all origins
+  const corsHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Max-Age': '86400'
   };
 
   const method = event.requestContext?.http?.method;
   const path = event.requestContext?.http?.path || event.path || '';
+
+  // Handle OPTIONS preflight requests
+  if (method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: ''
+    };
+  }
 
   try {
     logger.info('Workflow API request received', {
@@ -43,14 +55,14 @@ export async function handler(event, context) {
         const runId = path.split('/runs/')[1]?.split('?')[0];
         
         if (!runId) {
-          return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({
-              error: 'Missing runId',
-              message: 'Run ID is required'
-            })
-          };
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            error: 'Missing runId',
+            message: 'Run ID is required'
+          })
+        };
         }
 
         logger.info('Fetching run', { runId });
@@ -59,7 +71,7 @@ export async function handler(event, context) {
         if (!run) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Run not found',
               message: `Run with ID ${runId} not found`
@@ -69,7 +81,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             run
@@ -89,7 +101,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             runs: result.items,
@@ -107,7 +119,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             templates
@@ -123,7 +135,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             brandGuides
@@ -139,7 +151,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             funnelTemplates
@@ -153,7 +165,7 @@ export async function handler(event, context) {
         if (!funnelTemplateId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing funnelTemplateId',
               message: 'Funnel template ID is required'
@@ -167,7 +179,7 @@ export async function handler(event, context) {
         if (!template) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Funnel template not found',
               message: `Funnel template with ID ${funnelTemplateId} not found`
@@ -177,7 +189,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             funnelTemplate: template
@@ -191,7 +203,7 @@ export async function handler(event, context) {
         if (!brandGuideId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing brandGuideId',
               message: 'Brand guide ID is required'
@@ -205,7 +217,7 @@ export async function handler(event, context) {
         if (!guide) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Brand guide not found',
               message: `Brand guide with ID ${brandGuideId} not found`
@@ -215,7 +227,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             brandGuide: guide
@@ -226,7 +238,7 @@ export async function handler(event, context) {
       // Unknown GET endpoint
       return {
         statusCode: 404,
-        headers,
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Not found',
           message: `Endpoint ${path} not found`
@@ -243,7 +255,7 @@ export async function handler(event, context) {
       } catch (e) {
         return {
           statusCode: 400,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Invalid JSON in request body',
             message: e.message
@@ -256,7 +268,7 @@ export async function handler(event, context) {
         if (!body.name) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing required field',
               message: 'name is required'
@@ -267,7 +279,7 @@ export async function handler(event, context) {
         if (!body.funnelJson) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing required field',
               message: 'funnelJson is required'
@@ -287,7 +299,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 201,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             funnelTemplate: template
@@ -300,7 +312,7 @@ export async function handler(event, context) {
         if (!body.name) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing required field',
               message: 'name is required'
@@ -308,13 +320,14 @@ export async function handler(event, context) {
           };
         }
 
-        if (!body.content) {
+        // Require either content or brandGuideJson
+        if (!body.content && !body.brandGuideJson) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing required field',
-              message: 'content is required'
+              message: 'Either content or brandGuideJson is required'
             })
           };
         }
@@ -324,14 +337,15 @@ export async function handler(event, context) {
           brandGuideId: body.brandGuideId,
           name: body.name,
           description: body.description || '',
-          content: body.content,
+          content: body.content || '',
+          brandGuideJson: body.brandGuideJson || null,
           status: body.status || 'active',
           metadata: body.metadata || {}
         });
 
         return {
           statusCode: 201,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             brandGuide: guide
@@ -345,7 +359,7 @@ export async function handler(event, context) {
         if (!body.funnelTemplateId && !body.templateId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing required field',
               message: 'funnelTemplateId is required'
@@ -356,7 +370,7 @@ export async function handler(event, context) {
         if (!body.brandGuideId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing required field',
               message: 'brandGuideId is required'
@@ -376,7 +390,7 @@ export async function handler(event, context) {
         if (!funnelTemplate) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Funnel template not found',
               message: `Funnel template with ID ${body.funnelTemplateId} not found`
@@ -387,7 +401,7 @@ export async function handler(event, context) {
         if (!brandGuide) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Brand guide not found',
               message: `Brand guide with ID ${body.brandGuideId} not found`
@@ -413,7 +427,7 @@ export async function handler(event, context) {
           logger.error('State Machine ARN not configured');
           return {
             statusCode: 500,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Configuration error',
               message: 'State Machine ARN not configured'
@@ -438,7 +452,7 @@ export async function handler(event, context) {
             brandGuideId: body.brandGuideId
           },
           // Pass brand guide and template funnel directly to avoid DB lookup
-          brandGuide: brandGuide.content,
+          brandGuide: brandGuide.brandGuideJson || brandGuide.content,
           templateFunnel: funnelTemplate.funnelJson,
           initiatedBy: 'api',
           source: 'workflow-api'
@@ -489,7 +503,7 @@ export async function handler(event, context) {
           
           return {
             statusCode: 500,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Failed to start workflow',
               message: error.message,
@@ -500,7 +514,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 202,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             runId: run.runId,
@@ -515,7 +529,7 @@ export async function handler(event, context) {
       if (!body.input_as_text && !body.templateId) {
         return {
           statusCode: 400,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Missing required field',
             message: 'Either input_as_text or templateId must be provided'
@@ -542,7 +556,7 @@ export async function handler(event, context) {
 
       return {
         statusCode: 200,
-        headers,
+        headers: corsHeaders,
         body: JSON.stringify({
           success: true,
           output: result.output_text,
@@ -561,7 +575,7 @@ export async function handler(event, context) {
       } catch (e) {
         return {
           statusCode: 400,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Invalid JSON in request body',
             message: e.message
@@ -575,7 +589,7 @@ export async function handler(event, context) {
         if (!funnelTemplateId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing funnelTemplateId',
               message: 'Funnel template ID is required'
@@ -588,7 +602,7 @@ export async function handler(event, context) {
         if (!existing) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Funnel template not found',
               message: `Funnel template with ID ${funnelTemplateId} not found`
@@ -609,7 +623,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             funnelTemplate: template
@@ -623,7 +637,7 @@ export async function handler(event, context) {
         if (!brandGuideId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing brandGuideId',
               message: 'Brand guide ID is required'
@@ -636,7 +650,7 @@ export async function handler(event, context) {
         if (!existing) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Brand guide not found',
               message: `Brand guide with ID ${brandGuideId} not found`
@@ -650,6 +664,7 @@ export async function handler(event, context) {
           name: body.name !== undefined ? body.name : existing.name,
           description: body.description !== undefined ? body.description : existing.description,
           content: body.content !== undefined ? body.content : existing.content,
+          brandGuideJson: body.brandGuideJson !== undefined ? body.brandGuideJson : existing.brandGuideJson,
           status: body.status !== undefined ? body.status : existing.status,
           createdAt: existing.createdAt, // Preserve original creation date
           metadata: body.metadata !== undefined ? body.metadata : existing.metadata
@@ -657,7 +672,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             brandGuide: guide
@@ -668,7 +683,7 @@ export async function handler(event, context) {
       // Unknown PUT endpoint
       return {
         statusCode: 404,
-        headers,
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Not found',
           message: `Endpoint ${path} not found`
@@ -684,7 +699,7 @@ export async function handler(event, context) {
         if (!funnelTemplateId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing funnelTemplateId',
               message: 'Funnel template ID is required'
@@ -698,7 +713,7 @@ export async function handler(event, context) {
         if (!deleted) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Funnel template not found',
               message: `Funnel template with ID ${funnelTemplateId} not found`
@@ -708,7 +723,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             message: 'Funnel template deleted successfully'
@@ -722,7 +737,7 @@ export async function handler(event, context) {
         if (!brandGuideId) {
           return {
             statusCode: 400,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Missing brandGuideId',
               message: 'Brand guide ID is required'
@@ -736,7 +751,7 @@ export async function handler(event, context) {
         if (!deleted) {
           return {
             statusCode: 404,
-            headers,
+            headers: corsHeaders,
             body: JSON.stringify({
               error: 'Brand guide not found',
               message: `Brand guide with ID ${brandGuideId} not found`
@@ -746,7 +761,7 @@ export async function handler(event, context) {
 
         return {
           statusCode: 200,
-          headers,
+          headers: corsHeaders,
           body: JSON.stringify({
             success: true,
             message: 'Brand guide deleted successfully'
@@ -757,7 +772,7 @@ export async function handler(event, context) {
       // Unknown DELETE endpoint
       return {
         statusCode: 404,
-        headers,
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Not found',
           message: `Endpoint ${path} not found`
@@ -768,7 +783,7 @@ export async function handler(event, context) {
     // Unsupported method
     return {
       statusCode: 405,
-      headers,
+      headers: corsHeaders,
       body: JSON.stringify({
         error: 'Method not allowed',
         message: `Method ${method} not supported`
@@ -779,7 +794,7 @@ export async function handler(event, context) {
 
     return {
       statusCode: 500,
-      headers,
+      headers: corsHeaders,
       body: JSON.stringify({
         error: 'Request failed',
         message: error.message,
