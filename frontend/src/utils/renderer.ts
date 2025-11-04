@@ -153,7 +153,6 @@ export function renderOptInPage(funnelJson: FunnelElement[]): string {
   const bgHighlight = getColor(funnelJson, 'opt_color_bg_highlight');
   const textPrimary = getColor(funnelJson, 'opt_color_text_primary');
   const textSecondary = getColor(funnelJson, 'opt_color_text_secondary');
-  const textTertiary = getColor(funnelJson, 'opt_color_text_tertiary');
 
   // Build hero section HTML
   const hasHeroContent = heroTag || heroHeadline || heroHeadlineEmphasis || heroSubheadline || templateTagline;

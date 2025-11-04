@@ -7,10 +7,10 @@ import { api } from '../utils/api';
 interface RunDetailProps {
   run: Run;
   onClose: () => void;
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
-export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
+export default function RunDetail({ run, onClose }: RunDetailProps) {
   const [activeTab, setActiveTab] = useState<'opt' | 'ty' | 'dl' | 'email'>('opt');
   const [funnelJson, setFunnelJson] = useState<FunnelElement[]>([]);
   const [templateName, setTemplateName] = useState<string | null>(null);
@@ -261,19 +261,29 @@ export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
             <div className="info-item">
               <div className="info-label">Agent Cost</div>
               <div className="info-value">
-                ${(run.cost?.agent?.cost !== undefined 
-                  ? run.cost.agent.cost 
-                  : (typeof run.cost?.agent === 'number' ? run.cost.agent : 0) || 0
-                ).toFixed(4)}
+                ${(() => {
+                  let agentCost = 0;
+                  if (run.cost?.agent) {
+                    if (typeof run.cost.agent === 'number') {
+                      agentCost = run.cost.agent;
+                    } else if (typeof run.cost.agent.cost === 'number') {
+                      agentCost = run.cost.agent.cost;
+                    }
+                  }
+                  return agentCost.toFixed(4);
+                })()}
               </div>
             </div>
             <div className="info-item">
               <div className="info-label">Image Cost</div>
               <div className="info-value">
-                ${(run.cost?.images?.cost !== undefined
-                  ? run.cost.images.cost
-                  : (typeof run.cost?.image === 'number' ? run.cost.image : 0) || 0
-                ).toFixed(4)}
+                ${(() => {
+                  let imageCost = 0;
+                  if (run.cost?.images && typeof run.cost.images.cost === 'number') {
+                    imageCost = run.cost.images.cost;
+                  }
+                  return imageCost.toFixed(4);
+                })()}
               </div>
             </div>
             {(run.cost?.agent?.tokens?.input || run.cost?.agent?.tokens?.output) && (
@@ -296,7 +306,7 @@ export default function RunDetail({ run, onClose, onRefresh }: RunDetailProps) {
                 )}
               </>
             )}
-            {(run.cost?.images?.imagesGenerated || 0) > 0 && (
+            {run.cost?.images?.imagesGenerated && run.cost.images.imagesGenerated > 0 && (
               <div className="info-item">
                 <div className="info-label">Images Generated</div>
                 <div className="info-value">{run.cost.images.imagesGenerated}</div>

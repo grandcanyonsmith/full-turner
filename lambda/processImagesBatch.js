@@ -26,7 +26,12 @@ export async function handler(event, context) {
     });
 
     // Extract image URLs from template funnel
-    const imageUrls = extractImageUrls(template.templateFunnelJson);
+    // Ensure templateFunnelJson is a string
+    const templateFunnelJsonString = typeof template.templateFunnelJson === 'string'
+      ? template.templateFunnelJson
+      : JSON.stringify(template.templateFunnelJson);
+    
+    const imageUrls = extractImageUrls(templateFunnelJsonString);
 
     if (imageUrls.length === 0) {
       logger.info('No images to process');
@@ -44,7 +49,7 @@ export async function handler(event, context) {
     });
 
     // Parse funnel data for element context
-    const funnelData = JSON.parse(template.templateFunnelJson);
+    const funnelData = JSON.parse(templateFunnelJsonString);
 
     // Prepare image processing items for Map state
     const imageItems = imageUrls.map(imageInfo => {
@@ -57,7 +62,9 @@ export async function handler(event, context) {
 
       return {
         imageInfo,
-        brandGuide: template.brandGuideContent,
+        brandGuide: typeof template.brandGuideContent === 'string'
+          ? template.brandGuideContent
+          : JSON.stringify(template.brandGuideContent),
         apiKey,
         elementContext,
         runId: event.runId,

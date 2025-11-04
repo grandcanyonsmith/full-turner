@@ -32,7 +32,10 @@ export async function handler(event, context) {
 
     if (event.brandGuide && event.templateFunnel) {
       logger.info('Using brand guide and template funnel from event');
-      brandGuideContent = event.brandGuide;
+      // Ensure brandGuide is a string (stringify if object)
+      brandGuideContent = typeof event.brandGuide === 'string'
+        ? event.brandGuide
+        : JSON.stringify(event.brandGuide);
       templateFunnelJson = typeof event.templateFunnel === 'string' 
         ? event.templateFunnel 
         : JSON.stringify(event.templateFunnel);

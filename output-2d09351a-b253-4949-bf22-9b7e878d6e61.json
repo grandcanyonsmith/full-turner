@@ -1,0 +1,310 @@
+[
+  {
+    "type": "character",
+    "element_id": "opt_brand_name",
+    "text": "Built to Birth"
+  },
+  {
+    "transparent_bg": true,
+    "alt_text": "Built to Birth logo",
+    "width": 277,
+    "element_id": "opt_logo_url",
+    "type": "image",
+    "url": "https://assets.cdn.filesafe.space/p9xZlSGZDreM38qWt8rE/media/65d399e8408181aae169906e.png",
+    "height": 100
+  },
+  {
+    "type": "character",
+    "element_id": "opt_meta_title",
+    "text": "Free Hospital Bag Checklist | Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_meta_description",
+    "text": "Download the free Hospital Bag Checklist from Built to Birth. Know what to pack for labor, birth, and postpartum."
+  },
+  {
+    "type": "character",
+    "element_id": "opt_meta_keywords",
+    "text": "hospital bag checklist, birth packing list, labor and delivery, postpartum essentials, maternity hospital bag"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_meta_author",
+    "text": "Built to Birth"
+  },
+  {
+    "element_id": "opt_image_url",
+    "transparent_bg": true,
+    "type": "image",
+    "alt_text": "Hero image in Built to Birth colors featuring the Hospital Bag Checklist download",
+    "url": "https://images.leadconnectorhq.com/image/f_webp/q_80/r_1200/u_https://assets.cdn.filesafe.space/DcYJVYtaONFVaDihust0/media/68e9f8a31470815b9916d6c6.png"
+  },
+  {
+    "element_id": "opt_cta_image_url",
+    "transparent_bg": false,
+    "type": "image",
+    "alt_text": "Call-to-action in Built to Birth colors for the Hospital Bag Checklist download",
+    "url": "https://images.leadconnectorhq.com/image/f_webp/q_80/r_1200/u_https://assets.cdn.filesafe.space/DcYJVYtaONFVaDihust0/media/68e9f8a31470815b9916d6c6.png"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_form_headline",
+    "text": "Get the Hospital Bag Checklist"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_form_subtext",
+    "text": "We’ll email the checklist right away. Your information stays private."
+  },
+  {
+    "type": "character",
+    "element_id": "opt_form_button_text",
+    "text": "Get the Checklist"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_form_url",
+    "text": "/thank-you.html"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_form_name_placeholder",
+    "text": "Your Name"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_form_email_placeholder",
+    "text": "your@email.com"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_privacy_text",
+    "text": "We respect your privacy. Unsubscribe at any time."
+  },
+  {
+    "type": "character",
+    "element_id": "opt_privacy_url",
+    "text": "/privacy"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_terms_url",
+    "text": "/terms"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_support_email",
+    "text": "bridget@builttobirth.com"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_company_address",
+    "text": "Built to Birth • https://www.builttobirth.com/"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_meta_title",
+    "text": "Success! Check Your Email | Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_meta_description",
+    "text": "Your hospital bag checklist is on its way. Check your email for access and next steps."
+  },
+  {
+    "type": "character",
+    "element_id": "ty_meta_keywords",
+    "text": "hospital bag checklist download, birth preparation, thank you"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_meta_author",
+    "text": "Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_meta_social_image_url",
+    "text": "https://cc360-pages.s3.us-west-2.amazonaws.com/og-success.jpg"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_headline",
+    "text": "Your Hospital Bag Checklist Is On Its Way"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_message",
+    "text": "We’ve sent the download link to your inbox. Look for an email from Bridget."
+  },
+  {
+    "type": "character",
+    "element_id": "ty_from_name",
+    "text": "Bridget"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_section_heading",
+    "text": "What's inside"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_inside_1",
+    "text": "Complete packing list for you, baby, and your partner"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_inside_2",
+    "text": "Printable checklist you can use right away"
+  },
+  {
+    "type": "character",
+    "element_id": "ty_inside_3",
+    "text": "Quick-start tips so you're ready when labor begins"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_headline",
+    "text": "Your Hospital Bag Checklist"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_subtext",
+    "text": "Use the button below to download the PDF."
+  },
+  {
+    "type": "character",
+    "element_id": "dl_button_text",
+    "text": "Download"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_download_url",
+    "text": "https://www.builttobirth.com/hospital-bag-checklist.pdf"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_meta_title",
+    "text": "Download Your Hospital Bag Checklist | Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_meta_description",
+    "text": "Download the free Hospital Bag Checklist from Built to Birth. Pack with confidence for labor, birth, and postpartum."
+  },
+  {
+    "type": "character",
+    "element_id": "dl_meta_keywords",
+    "text": "hospital bag checklist download, birth packing list, labor essentials"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_meta_author",
+    "text": "Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "dl_meta_social_image_url",
+    "text": "https://cc360-pages.s3.us-west-2.amazonaws.com/og-success.jpg"
+  },
+  {
+    "type": "character",
+    "element_id": "email_from_name",
+    "text": "Bridget from Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "email_subject",
+    "text": "Your Hospital Bag Checklist is here"
+  },
+  {
+    "type": "character",
+    "element_id": "email_headline",
+    "text": "Your Hospital Bag Checklist is ready"
+  },
+  {
+    "type": "character",
+    "element_id": "email_body",
+    "text": "<p>Hi,</p><p>Thanks for requesting the Hospital Bag Checklist. It’s a clear, practical guide to help you pack with confidence for labor, birth, and postpartum.</p><p>Use the button below to download your checklist:</p>"
+  },
+  {
+    "type": "character",
+    "element_id": "email_cta_text",
+    "text": "Download the Checklist"
+  },
+  {
+    "type": "character",
+    "element_id": "email_cta_url",
+    "text": "https://www.builttobirth.com/hospital-bag-checklist.pdf"
+  },
+  {
+    "type": "character",
+    "element_id": "email_closing",
+    "text": "<p>I'm here to support you.</p>"
+  },
+  {
+    "type": "character",
+    "element_id": "email_signature",
+    "text": "Bridget<br>Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "email_footer_text",
+    "text": "You're receiving this because you requested our free Hospital Bag Checklist."
+  },
+  {
+    "type": "character",
+    "element_id": "email_meta_title",
+    "text": "Email Preview | Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "email_meta_description",
+    "text": "Preview of the email sent with your Hospital Bag Checklist download."
+  },
+  {
+    "type": "character",
+    "element_id": "email_meta_keywords",
+    "text": "email preview, hospital bag checklist email, Built to Birth"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_brand",
+    "text": "#DC6B82"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_brand_2",
+    "text": "#F2A6B7"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_bg_hero",
+    "text": "#0A0C14"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_bg_section",
+    "text": "#0E1422"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_bg_highlight",
+    "text": "#0E1422"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_text_primary",
+    "text": "#0f172a"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_text_secondary",
+    "text": "#334155"
+  },
+  {
+    "type": "character",
+    "element_id": "opt_color_text_tertiary",
+    "text": "#64748b"
+  }
+]

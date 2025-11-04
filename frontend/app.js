@@ -240,7 +240,21 @@ function displayRuns(runs) {
 
         const statusClass = `status-${run.status || 'pending'}`;
         const statusText = (run.status || 'pending').charAt(0).toUpperCase() + (run.status || 'pending').slice(1);
-        const cost = run.cost?.total || run.cost?.agent?.cost || 0;
+        
+        // Safely extract cost value - ensure it's always a number
+        let cost = 0;
+        if (run.cost) {
+            if (typeof run.cost.total === 'number') {
+                cost = run.cost.total;
+            } else if (run.cost.agent) {
+                if (typeof run.cost.agent === 'number') {
+                    cost = run.cost.agent;
+                } else if (typeof run.cost.agent.cost === 'number') {
+                    cost = run.cost.agent.cost;
+                }
+            }
+        }
+        
         const timestamp = run.timestamp ? new Date(run.timestamp).toLocaleString() : 'N/A';
 
         tr.innerHTML = `

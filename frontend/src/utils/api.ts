@@ -7,8 +7,9 @@ import type {
 
 const getApiBaseUrl = (): string => {
   // Check if API_BASE_URL is set via window (from Vercel env var or manual config)
-  if (window.API_BASE_URL && window.API_BASE_URL !== '%API_BASE_URL%') {
-    const url = window.API_BASE_URL.replace(/\/$/, ''); // Remove trailing slash
+  const windowWithApi = window as typeof window & { API_BASE_URL?: string };
+  if (windowWithApi.API_BASE_URL && windowWithApi.API_BASE_URL !== '%API_BASE_URL%') {
+    const url = windowWithApi.API_BASE_URL.replace(/\/$/, ''); // Remove trailing slash
     console.log('Using API_BASE_URL from window:', url);
     return url;
   }

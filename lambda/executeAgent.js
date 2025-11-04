@@ -36,14 +36,24 @@ export async function handler(event, context) {
       ? `\n\n=== IMAGE URL KEYS ===\n${JSON.stringify(imageUrlKeys, null, 2)}\n\n=== PROCESSED IMAGE MAP ===\n${JSON.stringify(imageMap, null, 2)}`
       : "";
 
+    // Ensure brand guide is a string (stringify if object)
+    const brandGuideText = typeof template.brandGuideContent === 'string'
+      ? template.brandGuideContent
+      : JSON.stringify(template.brandGuideContent);
+    
+    // Ensure template funnel JSON is a string
+    const templateFunnelText = typeof template.templateFunnelJson === 'string'
+      ? template.templateFunnelJson
+      : JSON.stringify(template.templateFunnelJson);
+    
     // Combine workflow input with brand guide, template funnel, and processed images
     const combinedInput = `${input || "Please rewrite the funnel JSON according to the brand style guide and avatar provided."}
 
 === BRAND STYLE GUIDE & AVATAR ===
-${template.brandGuideContent}
+${brandGuideText}
 
 === TEMPLATE FUNNEL JSON ===
-${template.templateFunnelJson}${imageUrlKeysText}
+${templateFunnelText}${imageUrlKeysText}
 
 IMPORTANT: The images identified in image_url_keys have already been processed and redesigned according to brand guidelines. They have been uploaded to S3 and the URLs are provided in the PROCESSED IMAGE MAP above. Use these S3 URLs in your output instead of the original URLs.`;
 
