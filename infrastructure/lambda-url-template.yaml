@@ -25,7 +25,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: full-turner-workflow-api
-      Handler: api/workflowApi.handler
+      Handler: lambda/api/workflowApi.handler
       CodeUri: ../
       Runtime: nodejs20.x
       Timeout: 900
