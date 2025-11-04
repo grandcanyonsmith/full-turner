@@ -27,7 +27,11 @@ export function extractBrandInfo(brandGuide) {
 
   // Check if brandGuide is JSON object (new format)
   if (typeof brandGuide === 'object' && !Array.isArray(brandGuide) && brandGuide !== null) {
-    const styleGuide = brandGuide.brandStyleGuide;
+    // Handle nested structure: brandGuideJson.brandStyleGuide
+    let styleGuide = brandGuide.brandStyleGuide;
+    if (!styleGuide && brandGuide.brandGuideJson) {
+      styleGuide = brandGuide.brandGuideJson.brandStyleGuide || brandGuide.brandGuideJson;
+    }
     
     if (styleGuide) {
       // Extract colors from JSON
@@ -74,6 +78,84 @@ export function extractBrandInfo(brandGuide) {
     } catch (e) {
       // If stringification fails, return empty brandInfo
       return brandInfo;
+    }
+  }
+  
+  // Handle stringified JSON - try to parse it first
+  if (typeof brandGuide === 'string') {
+    // Try to parse as JSON first (handles stringified JSON objects)
+    try {
+      const parsed = JSON.parse(brandGuide);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        // Handle nested structure: if parsed has brandGuideJson, extract brandStyleGuide from it
+        if (parsed.brandGuideJson) {
+          // Check if brandGuideJson has brandStyleGuide
+          if (parsed.brandGuideJson.brandStyleGuide) {
+            // Extract from the nested brandStyleGuide
+            brandGuide = parsed.brandGuideJson.brandStyleGuide;
+            // Continue with object handling below (don't recurse)
+          } else if (typeof parsed.brandGuideJson === 'object') {
+            // brandGuideJson might be the styleGuide itself
+            brandGuide = parsed.brandGuideJson;
+            // Continue with object handling below (don't recurse)
+          } else {
+            // brandGuideJson is not an object, return empty
+            return brandInfo;
+          }
+        } else if (parsed.brandStyleGuide) {
+          // Has brandStyleGuide directly
+          brandGuide = parsed.brandStyleGuide;
+          // Continue with object handling below (don't recurse)
+        } else {
+          // No brandStyleGuide, try as object directly
+          brandGuide = parsed;
+          // Continue with object handling below (don't recurse)
+        }
+        // Now handle as object (will skip the string check below)
+        if (typeof brandGuide === 'object' && !Array.isArray(brandGuide) && brandGuide !== null) {
+          const styleGuide = brandGuide.brandStyleGuide || brandGuide;
+          if (styleGuide && typeof styleGuide === 'object') {
+            // Extract colors from JSON
+            if (styleGuide.colors) {
+              if (styleGuide.colors.primary) {
+                brandInfo.primaryColor = styleGuide.colors.primary.name || null;
+                brandInfo.primaryColorHex = styleGuide.colors.primary.hex || null;
+              }
+              if (styleGuide.colors.secondary) {
+                brandInfo.secondaryColor = styleGuide.colors.secondary.name || null;
+                brandInfo.secondaryColorHex = styleGuide.colors.secondary.hex || null;
+              }
+              if (styleGuide.colors.accent) {
+                brandInfo.accentColor = styleGuide.colors.accent.name || null;
+                brandInfo.accentColorHex = styleGuide.colors.accent.hex || null;
+              }
+            }
+            
+            // Extract typography from JSON
+            if (styleGuide.typography) {
+              if (styleGuide.typography.headings) {
+                brandInfo.headingFont = styleGuide.typography.headings.font || null;
+              }
+              if (styleGuide.typography.body) {
+                brandInfo.bodyFont = styleGuide.typography.body.font || null;
+              }
+            }
+            
+            // Extract visual style from JSON
+            if (styleGuide.visualStyle && styleGuide.visualStyle.elements) {
+              brandInfo.visualStyle = styleGuide.visualStyle.elements || [];
+            } else if (styleGuide.visualStyle && styleGuide.visualStyle.approach) {
+              brandInfo.visualStyle = [styleGuide.visualStyle.approach];
+            }
+            
+            return brandInfo;
+          }
+        }
+        // If we get here, return empty brandInfo
+        return brandInfo;
+      }
+    } catch (e) {
+      // Not valid JSON, continue with text parsing below
     }
   }
   
