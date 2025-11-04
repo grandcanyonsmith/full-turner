@@ -461,8 +461,24 @@ function displayCostBreakdown(cost) {
     const container = document.getElementById('costInfo');
     
     const total = cost.total || 0;
-    const agentCost = cost.agent?.cost || cost.agent || 0;
-    const imageCost = cost.images?.cost || cost.image || 0;
+    // Handle agent cost: could be cost.agent.cost (number) or cost.agent (number) or undefined
+    let agentCost = 0;
+    if (cost.agent) {
+        if (typeof cost.agent === 'number') {
+            agentCost = cost.agent;
+        } else if (typeof cost.agent.cost === 'number') {
+            agentCost = cost.agent.cost;
+        }
+    }
+    
+    // Handle image cost: could be cost.images.cost (number) or cost.image (number) or undefined
+    let imageCost = 0;
+    if (cost.images && typeof cost.images.cost === 'number') {
+        imageCost = cost.images.cost;
+    } else if (typeof cost.image === 'number') {
+        imageCost = cost.image;
+    }
+    
     const agentTokens = cost.agent?.tokens || {};
     const imagesGenerated = cost.images?.imagesGenerated || 0;
 
