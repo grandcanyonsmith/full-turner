@@ -476,7 +476,10 @@ export async function handler(event, context) {
           stateMachineArn 
         });
         
-        const sfnClient = new SFNClient({ region: context.invokedFunctionArn?.split(':')[3] || 'us-west-2' });
+        // Extract region from state machine ARN (format: arn:aws:states:REGION:ACCOUNT:stateMachine:NAME)
+        // State machine ARN format: arn:aws:states:us-east-1:471112574622:stateMachine:full-turner-workflow
+        const stateMachineRegion = stateMachineArn.split(':')[3] || 'us-east-1';
+        const sfnClient = new SFNClient({ region: stateMachineRegion });
         
         try {
           const executionName = `run-${run.runId}-${Date.now()}`;

@@ -18,7 +18,7 @@ Parameters:
   StateMachineArn:
     Type: String
     Description: ARN of the Step Functions state machine
-    Default: arn:aws:states:us-west-2:471112574622:stateMachine:full-turner-workflow
+    Default: arn:aws:states:us-east-1:471112574622:stateMachine:full-turner-workflow
 
 Resources:
   WorkflowAPI:
