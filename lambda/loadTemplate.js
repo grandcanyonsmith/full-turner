@@ -74,7 +74,9 @@ export async function handler(event, context) {
         brandGuideContent,
         templateFunnelJson,
         metadata: {}
-      }
+      },
+      // Pass through API key if present
+      apiKey: event.apiKey
     };
   } catch (error) {
     logger.error('Failed to load template', error, { event });

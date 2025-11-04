@@ -25,6 +25,17 @@ async function processSingleImage(imageInfo, brandGuide, apiKey, funnelData) {
   const startTime = Date.now();
 
   try {
+    // Ensure brandGuide is properly formatted (handle both string and object)
+    // extractBrandInfo handles objects, but we need to ensure it's not undefined
+    let brandGuideForProcessing = brandGuide;
+    if (brandGuide && typeof brandGuide === 'object' && !Array.isArray(brandGuide)) {
+      // Keep as object - extractBrandInfo handles objects
+      brandGuideForProcessing = brandGuide;
+    } else if (typeof brandGuide !== 'string' && brandGuide !== undefined) {
+      // Stringify if it's something else
+      brandGuideForProcessing = JSON.stringify(brandGuide);
+    }
+    
     // Find matching element in template funnel to get context
     const element = funnelData.find(item => item.element_id === imageInfo.elementId);
     const elementContext = element ? {
@@ -49,7 +60,7 @@ async function processSingleImage(imageInfo, brandGuide, apiKey, funnelData) {
       imageInfo.elementId,
       apiKey,
       imageInfo.transparentBg,
-      brandGuide,
+      brandGuideForProcessing,
       elementContext,
       imageInfo.width,
       imageInfo.height
