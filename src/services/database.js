@@ -143,9 +143,14 @@ export async function createRun(runData) {
     startTime: timestamp,
     cost: {
       total: 0,
-      agent: 0,
-      image: 0,
-      details: {}
+      agent: {
+        cost: 0,
+        tokens: {}
+      },
+      images: {
+        cost: 0,
+        imagesGenerated: 0
+      }
     },
     metadata: runData.metadata || {}
   };
