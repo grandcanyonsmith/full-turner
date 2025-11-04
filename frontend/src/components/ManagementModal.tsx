@@ -17,7 +17,7 @@ export default function ManagementModal({
   onClose,
   onEditFunnelTemplate,
   onEditBrandGuide,
-  onRefresh,
+  onRefresh: _onRefresh,
 }: ManagementModalProps) {
   const [activeTab, setActiveTab] = useState<'funnel-templates' | 'brand-guides'>('funnel-templates');
 

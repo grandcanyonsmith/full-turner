@@ -421,13 +421,25 @@ export async function handler(event, context) {
         const stateMachineArn = process.env.STATE_MACHINE_ARN || process.env.WORKFLOW_STATE_MACHINE_ARN;
         
         if (!stateMachineArn) {
-          logger.error('State Machine ARN not configured');
+          logger.error('State Machine ARN not configured', { runId: run.runId });
+          
+          // Update run status to failed since we can't start the workflow
+          await updateRunStatus(run.runId, run.timestamp, {
+            status: 'failed',
+            output: {
+              error: 'Configuration error: State Machine ARN not configured',
+              timestamp: new Date().toISOString()
+            },
+            endTime: new Date().toISOString()
+          });
+          
           return {
             statusCode: 500,
             headers: corsHeaders,
             body: JSON.stringify({
               error: 'Configuration error',
-              message: 'State Machine ARN not configured'
+              message: 'State Machine ARN not configured. Please set STATE_MACHINE_ARN environment variable.',
+              runId: run.runId
             })
           };
         }
@@ -449,8 +461,15 @@ export async function handler(event, context) {
             brandGuideId: body.brandGuideId
           },
           // Pass brand guide and template funnel directly to avoid DB lookup
-          brandGuide: brandGuide.brandGuideJson || brandGuide.content,
-          templateFunnel: funnelTemplate.funnelJson,
+          // Stringify brandGuideJson if it's an object, otherwise use content string
+          brandGuide: brandGuide.brandGuideJson 
+            ? (typeof brandGuide.brandGuideJson === 'string' 
+                ? brandGuide.brandGuideJson 
+                : JSON.stringify(brandGuide.brandGuideJson))
+            : brandGuide.content,
+          templateFunnel: typeof funnelTemplate.funnelJson === 'string'
+            ? funnelTemplate.funnelJson
+            : JSON.stringify(funnelTemplate.funnelJson),
           initiatedBy: 'api',
           source: 'workflow-api'
         };

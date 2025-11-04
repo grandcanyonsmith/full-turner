@@ -260,27 +260,27 @@ export interface FunnelElement {
   transparent_bg?: boolean;
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse {
   success: boolean;
   message?: string;
   [key: string]: any;
 }
 
-export interface RunsResponse extends ApiResponse<Run> {
+export interface RunsResponse extends ApiResponse {
   runs: Run[];
   lastKey?: string | null;
   count?: number;
 }
 
-export interface RunResponse extends ApiResponse<Run> {
+export interface RunResponse extends ApiResponse {
   run: Run;
 }
 
-export interface FunnelTemplatesResponse extends ApiResponse<FunnelTemplate> {
+export interface FunnelTemplatesResponse extends ApiResponse {
   funnelTemplates: FunnelTemplate[];
 }
 
-export interface BrandGuidesResponse extends ApiResponse<BrandGuide> {
+export interface BrandGuidesResponse extends ApiResponse {
   brandGuides: BrandGuide[];
 }
 

@@ -29,8 +29,8 @@ function App() {
   const [showEditBrandGuideModal, setShowEditBrandGuideModal] = useState(false);
   const [currentEditingTemplateId, setCurrentEditingTemplateId] = useState<string | null>(null);
   const [currentEditingBrandGuideId, setCurrentEditingBrandGuideId] = useState<string | null>(null);
-  const [refreshInterval, setRefreshIntervalState] = useState<NodeJS.Timeout | null>(null);
-  const [detailRefreshInterval, setDetailRefreshIntervalState] = useState<NodeJS.Timeout | null>(null);
+  const [refreshInterval, setRefreshIntervalState] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [detailRefreshInterval, setDetailRefreshIntervalState] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const loadRuns = useCallback(async () => {
     setLoading(true);
